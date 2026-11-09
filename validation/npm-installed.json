@@ -1,0 +1,161 @@
+{
+  "version": "0.11.0",
+  "name": "soma-app",
+  "dependencies": {
+    "@codemirror/autocomplete": {
+      "version": "6.20.3",
+      "resolved": "https://registry.npmjs.org/@codemirror/autocomplete/-/autocomplete-6.20.3.tgz",
+      "overridden": false
+    },
+    "@codemirror/commands": {
+      "version": "6.11.1",
+      "resolved": "https://registry.npmjs.org/@codemirror/commands/-/commands-6.11.1.tgz",
+      "overridden": false
+    },
+    "@codemirror/lang-markdown": {
+      "version": "6.5.2",
+      "resolved": "https://registry.npmjs.org/@codemirror/lang-markdown/-/lang-markdown-6.5.2.tgz",
+      "overridden": false
+    },
+    "@codemirror/lang-python": {
+      "version": "6.2.1",
+      "resolved": "https://registry.npmjs.org/@codemirror/lang-python/-/lang-python-6.2.1.tgz",
+      "overridden": false
+    },
+    "@codemirror/language": {
+      "version": "6.12.4",
+      "resolved": "https://registry.npmjs.org/@codemirror/language/-/language-6.12.4.tgz",
+      "overridden": false
+    },
+    "@codemirror/search": {
+      "version": "6.7.2",
+      "resolved": "https://registry.npmjs.org/@codemirror/search/-/search-6.7.2.tgz",
+      "overridden": false
+    },
+    "@codemirror/state": {
+      "version": "6.7.6",
+      "resolved": "https://registry.npmjs.org/@codemirror/state/-/state-6.7.6.tgz",
+      "overridden": false
+    },
+    "@codemirror/view": {
+      "version": "6.43.13",
+      "resolved": "https://registry.npmjs.org/@codemirror/view/-/view-6.43.13.tgz",
+      "overridden": false
+    },
+    "@fontsource/ibm-plex-mono": {
+      "version": "5.3.0",
+      "resolved": "https://registry.npmjs.org/@fontsource/ibm-plex-mono/-/ibm-plex-mono-5.3.0.tgz",
+      "overridden": false
+    },
+    "@fontsource/ibm-plex-sans": {
+      "version": "5.3.0",
+      "resolved": "https://registry.npmjs.org/@fontsource/ibm-plex-sans/-/ibm-plex-sans-5.3.0.tgz",
+      "overridden": false
+    },
+    "@lezer/highlight": {
+      "version": "1.2.5",
+      "resolved": "https://registry.npmjs.org/@lezer/highlight/-/highlight-1.2.5.tgz",
+      "overridden": false
+    },
+    "@types/node": {
+      "version": "22.20.4",
+      "resolved": "https://registry.npmjs.org/@types/node/-/node-22.20.4.tgz",
+      "overridden": false
+    },
+    "@types/three": {
+      "version": "0.180.0",
+      "resolved": "https://registry.npmjs.org/@types/three/-/three-0.180.0.tgz",
+      "overridden": false
+    },
+    "@types/yauzl": {
+      "version": "3.4.0",
+      "resolved": "https://registry.npmjs.org/@types/yauzl/-/yauzl-3.4.0.tgz",
+      "overridden": false
+    },
+    "@types/yazl": {
+      "version": "3.3.1",
+      "resolved": "https://registry.npmjs.org/@types/yazl/-/yazl-3.3.1.tgz",
+      "overridden": false
+    },
+    "@xterm/addon-fit": {
+      "version": "0.11.0",
+      "resolved": "https://registry.npmjs.org/@xterm/addon-fit/-/addon-fit-0.11.0.tgz",
+      "overridden": false
+    },
+    "@xterm/addon-webgl": {
+      "version": "0.19.0",
+      "resolved": "https://registry.npmjs.org/@xterm/addon-webgl/-/addon-webgl-0.19.0.tgz",
+      "overridden": false
+    },
+    "@xterm/xterm": {
+      "version": "6.0.0",
+      "resolved": "https://registry.npmjs.org/@xterm/xterm/-/xterm-6.0.0.tgz",
+      "overridden": false
+    },
+    "dugite": {
+      "version": "3.2.3",
+      "resolved": "https://registry.npmjs.org/dugite/-/dugite-3.2.3.tgz",
+      "overridden": false
+    },
+    "electron-builder": {
+      "version": "26.15.3",
+      "resolved": "https://registry.npmjs.org/electron-builder/-/electron-builder-26.15.3.tgz",
+      "overridden": false
+    },
+    "electron": {
+      "version": "44.4.5",
+      "resolved": "https://registry.npmjs.org/electron/-/electron-44.4.5.tgz",
+      "overridden": false
+    },
+    "esbuild": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/esbuild/-/esbuild-0.28.2.tgz",
+      "overridden": false
+    },
+    "marked": {
+      "version": "18.1.0",
+      "resolved": "https://registry.npmjs.org/marked/-/marked-18.1.0.tgz",
+      "overridden": false
+    },
+    "mediabunny": {
+      "version": "1.61.3",
+      "resolved": "https://registry.npmjs.org/mediabunny/-/mediabunny-1.61.3.tgz",
+      "overridden": false
+    },
+    "node-pty": {
+      "version": "1.1.0",
+      "resolved": "https://registry.npmjs.org/node-pty/-/node-pty-1.1.0.tgz",
+      "overridden": false
+    },
+    "pdfjs-dist": {
+      "version": "6.4.299",
+      "resolved": "https://registry.npmjs.org/pdfjs-dist/-/pdfjs-dist-6.4.299.tgz",
+      "overridden": false
+    },
+    "three-mesh-bvh": {
+      "version": "0.9.15",
+      "resolved": "https://registry.npmjs.org/three-mesh-bvh/-/three-mesh-bvh-0.9.15.tgz",
+      "overridden": false
+    },
+    "three": {
+      "version": "0.180.0",
+      "resolved": "https://registry.npmjs.org/three/-/three-0.180.0.tgz",
+      "overridden": false
+    },
+    "typescript": {
+      "version": "5.9.3",
+      "resolved": "https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz",
+      "overridden": false
+    },
+    "yauzl": {
+      "version": "3.4.0",
+      "resolved": "https://registry.npmjs.org/yauzl/-/yauzl-3.4.0.tgz",
+      "overridden": false
+    },
+    "yazl": {
+      "version": "3.3.1",
+      "resolved": "https://registry.npmjs.org/yazl/-/yazl-3.3.1.tgz",
+      "overridden": false
+    }
+  }
+}

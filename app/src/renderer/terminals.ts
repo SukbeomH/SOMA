@@ -60,6 +60,27 @@ export class TerminalTabs {
     pane.hidden = true;
     this.panes.appendChild(pane);
     term.open(pane);
+    if (location.protocol === 'http:') {
+      // Use standard wheel deltas for browser scrollback. xterm's legacy wheel
+      // normalization can ignore trackpad events in embedded Mac browsers.
+      let remainder = 0;
+      pane.addEventListener('wheel', (event) => {
+        if (event.ctrlKey || event.metaKey || !event.deltaY || term.buffer.active.type !== 'normal'
+          || (term.modes.mouseTrackingMode !== 'none' && !event.shiftKey)) return;
+        const height = term.element?.clientHeight;
+        if (!height) return;
+        const rows = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? event.deltaY
+          : event.deltaMode === WheelEvent.DOM_DELTA_PAGE ? event.deltaY * term.rows
+          : event.deltaY / (height / term.rows);
+        if (Math.sign(rows) !== Math.sign(remainder)) remainder = 0;
+        remainder += rows;
+        const lines = Math.trunc(remainder);
+        remainder -= lines;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (lines) term.scrollLines(lines);
+      }, { capture: true, passive: false });
+    }
     // WebGL zeichnet Block- und Rahmenzeichen selbst über die volle Zellhöhe. Der DOM-Renderer nimmt die Schriftglyphen,
     // die die Zelle nicht immer ganz füllen (OpenCode-Seitenleisten erscheinen sonst gestrichelt). Ohne WebGL oder nach
     // Kontextverlust (zu viele Kontexte neben dem 3D-Viewer) bleibt der DOM-Renderer als Rückfallweg.

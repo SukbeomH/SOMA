@@ -92,7 +92,9 @@ def _export_one(shape, fmt, path, name="part", mesh_opts=None):
         # glTF ueber OCCT mit Einheit und Achse (Issue #8)
         return meshexport.export_mesh(shape, fmt, path, name, **(mesh_opts or {}))
     if fmt in cq_type:
-        cq.exporters.export(wp, str(path), exportType=cq_type[fmt])
+        # CadQuery 2.8 iterates a Workplane's solid into its shells. Export the
+        # registered Shape directly so STEP/BREP retain solid topology.
+        cq.exporters.export(shape, str(path), exportType=cq_type[fmt])
     elif fmt == "dxf":  # 2D: Schnitt in Bauteilmitte
         cq.exporters.exportDXF(wp.section(shape.BoundingBox().center.z), str(path))
     elif fmt == "iges":

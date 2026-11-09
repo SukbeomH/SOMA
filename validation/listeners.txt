@@ -1,0 +1,3 @@
+COMMAND    PID    USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
+Electron 38967 sukbeom   35u  IPv4 0x4cab070a46eb6e1d      0t0  TCP 127.0.0.1:55291 (LISTEN)
+Electron 38967 sukbeom   63u  IPv4 0x49eefcfff7320f1b      0t0  TCP 127.0.0.1:8765 (LISTEN)

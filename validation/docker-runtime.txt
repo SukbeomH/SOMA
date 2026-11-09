@@ -1,0 +1,6 @@
+v24.21.0
+Python 3.12.16
+codex-cli 0.167.0
+uid=10001(soma) gid=10001(soma) groups=10001(soma)
+electron_absent
+display_unset

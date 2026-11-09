@@ -1,0 +1,14 @@
+{
+  "before_glb_sha256": "a646b74bc81611ec2d5df5c569167c6f395f50bd5b94d16165e1e5c523c52a7c",
+  "failure_status": "error",
+  "error": {
+    "kind": "RuntimeError",
+    "message": "RuntimeError: SOMA_WEB_EXPECTED_FAILURE: validation only",
+    "file": "model.py",
+    "line": 37,
+    "traceback": "  File \"/Users/sukbeom/Documents/CADAI/SOMA/.soma-web/workspaces/7320a955-7fbf-4613-8eeb-19a7033dfbf9/model.py\", line 37, in <module>\n    raise RuntimeError(\"SOMA_WEB_EXPECTED_FAILURE: validation only\")\nRuntimeError: SOMA_WEB_EXPECTED_FAILURE: validation only\n"
+  },
+  "after_failure_glb_sha256": "a646b74bc81611ec2d5df5c569167c6f395f50bd5b94d16165e1e5c523c52a7c",
+  "previous_preview_preserved": true,
+  "restored_status": "ok"
+}

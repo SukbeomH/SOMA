@@ -1,5 +1,5 @@
 import path from 'node:path';
-import type { WebContents } from 'electron';
+import type { EventSink } from './host';
 import * as pty from 'node-pty';
 import { logAgentStart } from './agents';
 import { bridgeEnv } from './bridge';
@@ -38,7 +38,7 @@ export class TerminalManager {
   /** Getippte Zeile je Terminal, nur um einen von Hand gestarteten Agenten zu protokollieren (track). null: unzuverlässig. */
   private typed = new Map<number, string | null>();
 
-  constructor(private readonly wc: WebContents, private readonly dir: string) {}
+  constructor(private readonly wc: EventSink, private readonly dir: string) {}
 
   create(opts: { command?: string } = {}): number {
     const win = process.platform === 'win32';

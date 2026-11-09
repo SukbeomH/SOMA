@@ -11,7 +11,7 @@ import path from 'node:path';
 export function electronExe(appDir) {
   const exeName = process.platform === 'win32' ? 'electron.exe' : 'electron';
   const dist = path.join(appDir, 'node_modules', 'electron', 'dist');
-  const direct = path.join(dist, exeName);
+  const direct = process.platform === 'darwin' ? path.join(dist, 'Electron.app', 'Contents', 'MacOS', 'Electron') : path.join(dist, exeName);
   if (process.platform !== 'win32') return direct;
   if (!fs.realpathSync.native(dist).startsWith('\\\\')) return direct; // lokale Platte
 

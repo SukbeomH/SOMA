@@ -1,4 +1,5 @@
-import { app, dialog, shell, type BrowserWindow } from 'electron';
+import type { BrowserWindow } from 'electron';
+import { host as runtimeHost } from './host';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -22,15 +23,15 @@ function nextAnswer<T>(what: string): T {
  */
 export async function choosePath(win: BrowserWindow | null, kind: 'save' | 'open', defaultName: string): Promise<string | null> {
   if (testMode()) return nextAnswer<string | null>(`${kind} path`);
-  const defaultPath = path.isAbsolute(defaultName) ? defaultName : path.join(app.getPath('documents'), defaultName);
+  const defaultPath = path.isAbsolute(defaultName) ? defaultName : path.join(runtimeHost().app.getPath('documents'), defaultName);
   if (kind === 'save') {
     const filters = [{ name: 'SOMA model', extensions: ['soma'] }];
-    const r = win ? await dialog.showSaveDialog(win, { title: 'Save model', defaultPath, filters }) : await dialog.showSaveDialog({ title: 'Save model', defaultPath, filters });
+    const r = win ? await runtimeHost().dialog.showSaveDialog(win, { title: 'Save model', defaultPath, filters }) : await runtimeHost().dialog.showSaveDialog({ title: 'Save model', defaultPath, filters });
     return r.canceled || !r.filePath ? null : r.filePath;
   }
   const filters = [{ name: 'SOMA model (.soma, .zip)', extensions: ['soma', 'zip'] }];
   const opts = { title: 'Open model', filters, properties: ['openFile' as const] };
-  const r = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts);
+  const r = win ? await runtimeHost().dialog.showOpenDialog(win, opts) : await runtimeHost().dialog.showOpenDialog(opts);
   return r.canceled || !r.filePaths[0] ? null : r.filePaths[0];
 }
 
@@ -42,21 +43,21 @@ export async function chooseExportTarget(win: BrowserWindow | null, o: { kind: '
   if (testMode()) return nextAnswer<string | null>(o.title);
   if (o.kind === 'file') {
     const opts = { title: o.title, defaultPath: o.defaultPath, filters: o.ext ? [{ name: o.label ?? o.ext.toUpperCase(), extensions: [o.ext] }, { name: 'All files', extensions: ['*'] }] : undefined };
-    const r = win ? await dialog.showSaveDialog(win, opts) : await dialog.showSaveDialog(opts);
+    const r = win ? await runtimeHost().dialog.showSaveDialog(win, opts) : await runtimeHost().dialog.showSaveDialog(opts);
     return r.canceled || !r.filePath ? null : r.filePath;
   }
   const opts = { title: o.title, defaultPath: o.defaultPath, buttonLabel: 'Export here', properties: ['openDirectory' as const, 'createDirectory' as const] };
-  const r = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts);
+  const r = win ? await runtimeHost().dialog.showOpenDialog(win, opts) : await runtimeHost().dialog.showOpenDialog(opts);
   return r.canceled || !r.filePaths[0] ? null : r.filePaths[0];
 }
 
-export const documentsDir = () => app.getPath('documents');
+export const documentsDir = () => runtimeHost().app.getPath('documents');
 
 /** CadQuery-Skript für ein neues Modell (E100). null: abgebrochen. */
 export async function chooseCadQueryScript(win: BrowserWindow | null): Promise<string | null> {
   if (testMode()) return nextAnswer<string | null>('New model from CadQuery script');
   const opts = { title: 'New model from CadQuery script', defaultPath: documentsDir(), filters: [{ name: 'CadQuery script', extensions: ['py'] }], properties: ['openFile' as const] };
-  const r = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts);
+  const r = win ? await runtimeHost().dialog.showOpenDialog(win, opts) : await runtimeHost().dialog.showOpenDialog(opts);
   return r.canceled || !r.filePaths[0] ? null : r.filePaths[0];
 }
 
@@ -64,7 +65,7 @@ export async function chooseCadQueryScript(win: BrowserWindow | null): Promise<s
 export async function chooseFolder(win: BrowserWindow | null): Promise<string | null> {
   if (testMode()) return nextAnswer<string | null>('Open folder');
   const opts = { title: 'Open folder', defaultPath: documentsDir(), buttonLabel: 'Open folder', properties: ['openDirectory' as const, 'createDirectory' as const] };
-  const r = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts);
+  const r = win ? await runtimeHost().dialog.showOpenDialog(win, opts) : await runtimeHost().dialog.showOpenDialog(opts);
   return r.canceled || !r.filePaths[0] ? null : r.filePaths[0];
 }
 
@@ -72,7 +73,7 @@ export async function chooseFolder(win: BrowserWindow | null): Promise<string | 
 export async function chooseEntryScript(win: BrowserWindow | null, dir: string): Promise<string | null> {
   if (testMode()) return nextAnswer<string | null>('Entry script');
   const opts = { title: 'Script that builds the model', defaultPath: dir, filters: [{ name: 'Python script', extensions: ['py'] }], properties: ['openFile' as const] };
-  const r = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts);
+  const r = win ? await runtimeHost().dialog.showOpenDialog(win, opts) : await runtimeHost().dialog.showOpenDialog(opts);
   return r.canceled || !r.filePaths[0] ? null : r.filePaths[0];
 }
 
@@ -80,7 +81,7 @@ export async function chooseEntryScript(win: BrowserWindow | null, dir: string):
 export async function chooseSkillFiles(win: BrowserWindow | null): Promise<string[]> {
   if (testMode()) return nextAnswer<string[] | null>('Import skills') ?? [];
   const opts = { title: 'Import skills', defaultPath: documentsDir(), filters: [{ name: 'Skill (Markdown)', extensions: ['md'] }], properties: ['openFile' as const, 'multiSelections' as const] };
-  const r = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts);
+  const r = win ? await runtimeHost().dialog.showOpenDialog(win, opts) : await runtimeHost().dialog.showOpenDialog(opts);
   return r.canceled ? [] : r.filePaths;
 }
 
@@ -91,7 +92,7 @@ export async function chooseSkillFiles(win: BrowserWindow | null): Promise<strin
 export async function chooseInputFiles(win: BrowserWindow | null): Promise<string[]> {
   if (testMode()) return nextAnswer<string[] | null>('Import files') ?? [];
   const opts = { title: 'Import files into the model', defaultPath: documentsDir(), buttonLabel: 'Import', properties: ['openFile' as const, 'multiSelections' as const] };
-  const r = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts);
+  const r = win ? await runtimeHost().dialog.showOpenDialog(win, opts) : await runtimeHost().dialog.showOpenDialog(opts);
   return r.canceled ? [] : r.filePaths;
 }
 
@@ -111,7 +112,7 @@ export async function choose(win: BrowserWindow | null, o: ChooseOptions): Promi
     if (typeof i === 'number' && Number.isInteger(i) && i >= 0 && i < o.buttons.length) return i;
   }
   const opts = { type: 'question' as const, title: o.title, message: o.message, detail: o.detail, buttons: o.buttons, defaultId: 0, cancelId: o.buttons.length - 1, noLink: true };
-  const r = win ? await dialog.showMessageBox(win, opts) : await dialog.showMessageBox(opts);
+  const r = win ? await runtimeHost().dialog.showMessageBox(win, opts) : await runtimeHost().dialog.showMessageBox(opts);
   return r.response;
 }
 
@@ -120,14 +121,14 @@ export async function choose(win: BrowserWindow | null, o: ChooseOptions): Promi
  * und prüfen können, was dort gelandet ist.
  */
 export async function trashItem(abs: string): Promise<void> {
-  if (!testMode()) { await shell.trashItem(abs); return; }
-  const bin = path.join(app.getPath('userData'), 'test-papierkorb');
+  if (!testMode()) { await runtimeHost().shell.trashItem(abs); return; }
+  const bin = path.join(runtimeHost().app.getPath('userData'), 'test-papierkorb');
   fs.mkdirSync(bin, { recursive: true });
   fs.renameSync(abs, path.join(bin, `${Date.now()}-${path.basename(abs)}`));
 }
 
 export function notify(win: BrowserWindow | null, title: string, message: string): void {
   if (testMode()) return;
-  if (win) void dialog.showMessageBox(win, { type: 'info', title, message });
-  else void dialog.showMessageBox({ type: 'info', title, message });
+  if (win) void runtimeHost().dialog.showMessageBox(win, { type: 'info', title, message });
+  else void runtimeHost().dialog.showMessageBox({ type: 'info', title, message });
 }

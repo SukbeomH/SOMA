@@ -1,4 +1,5 @@
-import { shell, type BrowserWindow, type WebContents } from 'electron';
+import type { BrowserWindow } from 'electron';
+import { host, type EventSink } from './host';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -11,7 +12,7 @@ import { AnimBuilder, listResults, readAnimList, rerunResult, samePath } from '.
 import { DrawingBuilder, isDrawingFile, readDrawingList } from './drawings';
 import { resolveInside } from './files';
 import { BuildManager, buildIsStale, currentBuild, newestSourceMtime, runSoma } from './build';
-import { checkRequest, RenderService, type RenderRequest } from './render';
+import { checkRequest, type RenderBackend, type RenderRequest } from './render-request';
 import { choose, chooseCadQueryScript, chooseEntryScript, chooseExportTarget, chooseFolder, choosePath, documentsDir, trashItem } from './dialogs';
 import { applyFolder, planFolder, refreshFolderSection, topLevelScripts } from './folders';
 import { GitRepo, type GitStatus } from './git';
@@ -101,9 +102,8 @@ const modelPath = (p: string) => (isModelFile(p) ? p : `${p.replace(/\.zip$/i, '
 export class ProjectController {
   session: Session | null = null;
   /** Unsichtbares Fenster für Bilder und Videos (E58), eins für die App. */
-  readonly renders = new RenderService();
 
-  constructor(private readonly getWin: () => BrowserWindow | null, private readonly wc: WebContents) {}
+  constructor(private readonly getWin: () => BrowserWindow | null, private readonly wc: EventSink, readonly renders: RenderBackend) {}
 
   private send(channel: string, ...args: unknown[]) { if (!this.wc.isDestroyed()) this.wc.send(channel, ...args); }
   need(): Session { if (!this.session) throw new Error('No project open'); return this.session; }
@@ -360,8 +360,8 @@ export class ProjectController {
   async reveal(): Promise<void> {
     const s = this.need();
     const zip = getAppState(s.id).zipPath;
-    if (zip && fs.existsSync(zip)) shell.showItemInFolder(zip);
-    else await shell.openPath(s.dir);
+    if (zip && fs.existsSync(zip)) host().shell.showItemInFolder(zip);
+    else await host().shell.openPath(s.dir);
   }
 
   /**

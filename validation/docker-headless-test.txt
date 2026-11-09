@@ -1,0 +1,1 @@
+PASS: real Node startup without DISPLAY; CAD build/rebuild/failure/recovery; binary mesh; PTY; browser save dialogs; STEP/STL exports

@@ -1,0 +1,37 @@
+{
+  "date": "2026-11-09",
+  "mac": {
+    "node": "26.12.1",
+    "python": "3.12.16",
+    "architecture": "arm64",
+    "codex": "0.167.0",
+    "web_port": 8765,
+    "cad_hole_change_mm": [
+      10,
+      12
+    ]
+  },
+  "checks": {
+    "typescript": "pass",
+    "web_http_boundaries": "pass",
+    "unit_suite": "pass",
+    "desktop_smoke": "pass",
+    "mac_node_headless_integration": "pass",
+    "docker_node_headless_integration": "pass",
+    "step_brep_export_regression": "pass",
+    "hole12_cad_step_stl": "pass",
+    "browser_mac_codex_selection_edit_refresh": "pass",
+    "browser_terminal_scroll": "pass",
+    "browser_docker_terminal_selection_refresh": "pass"
+  },
+  "not_verified": [
+    "Docker Codex authentication and inference",
+    "Intel Mac",
+    "FEM/CalculiX",
+    "Proxmox"
+  ],
+  "unsupported_web": [
+    "soma render and PNG/video export",
+    "browser filesystem drag-and-drop/upload/download manager"
+  ]
+}

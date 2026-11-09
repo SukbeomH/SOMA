@@ -1,5 +1,7 @@
 # SOMA
 
+This fork adds an opt-in [local web mode and Docker Compose setup](WEB_LOCAL.md): the original viewer on the left and agent terminals on the right, served by Node.js without Electron or a virtual display.
+
 **Solid Object Modeling with Agents.** A desktop app for designing parametric 3D models together with a coding agent.
 
 **[somacad.app](https://somacad.app)** · [Download](https://somacad.app/download/) · [Video tutorial](https://www.youtube.com/watch?v=FJrgMl8ZGKI) · [Changelog](CHANGELOG.md) · [简体中文 (AI translation)](README.zh-CN.md)

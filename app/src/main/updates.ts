@@ -1,4 +1,4 @@
-import { net } from 'electron';
+import { host } from './host';
 import type { UpdateInfo } from '../shared/types';
 import { SOMA_VERSION, isNewerVersion, parseVersion } from '../shared/version';
 
@@ -39,7 +39,7 @@ async function fetchLatest(): Promise<UpdateInfo> {
   if (!url) return { ...base, state: 'skipped' };
   let res: Response;
   try {
-    res = await net.fetch(url, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': `SOMA/${SOMA_VERSION}` }, signal: AbortSignal.timeout(10_000), cache: 'no-store' });
+    res = await host().fetch(url, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': `SOMA/${SOMA_VERSION}` }, signal: AbortSignal.timeout(10_000), cache: 'no-store' });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return { ...base, state: 'error', error: /abort|timeout/i.test(msg) ? 'GitHub did not answer in time.' : `GitHub could not be reached (${msg}).` };

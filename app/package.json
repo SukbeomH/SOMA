@@ -3,7 +3,7 @@
   "version": "0.11.0",
   "private": true,
   "license": "GPL-3.0-or-later",
-  "author": "Kai Jungsthöfel",
+  "author": "Kai Jungsth\u00f6fel",
   "description": "SOMA (Solid Object Modeling with Agents): design 3D models in CadQuery with an AI agent of your choice",
   "homepage": "https://github.com/Kai-Jungsthoefel/SOMA",
   "main": "dist/main/main.js",
@@ -39,7 +39,12 @@
     "dist": "npm run build && electron-builder --config electron-builder.config.cjs --publish never",
     "dist:dir": "npm run build && electron-builder --config electron-builder.config.cjs --publish never --dir",
     "test": "npm run build && node test/run-all.mjs",
-    "test:all": "npm run build && node test/run-all.mjs --all"
+    "test:all": "npm run build && node test/run-all.mjs --all",
+    "start:web": "npm run build:web && node scripts/start-web.mjs",
+    "test:web": "node test/web.mjs",
+    "stop:web": "node scripts/stop-web.mjs",
+    "build:web": "node esbuild.config.mjs --web",
+    "test:headless": "npm run build:web && node test/headless.mjs"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.3",

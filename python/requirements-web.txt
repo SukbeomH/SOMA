@@ -1,0 +1,8 @@
+# Core CAD, drawing and document support; versions follow the desktop constraints.
+# FEM/gmsh is excluded: PyPI has no Linux aarch64 gmsh wheel for the pinned release.
+-c requirements-base.txt
+cadquery
+matplotlib
+pillow
+pyyaml
+pdfplumber

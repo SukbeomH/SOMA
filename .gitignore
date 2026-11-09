@@ -41,3 +41,8 @@ design/
 
 # Webseite, eigenes Git-Repo, nur lokal
 website/
+
+.soma-web/
+.downloads/
+/downloaded-exports/
+/soma-data-backup/

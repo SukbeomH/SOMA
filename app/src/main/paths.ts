@@ -1,4 +1,4 @@
-import { app } from 'electron';
+import { host } from './host';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -6,7 +6,7 @@ import type { SkillDirs } from './skills';
 
 /** App-Daten. Fuer Tests per SOMA_USER_DATA umleitbar, damit nichts im echten Profil landet. */
 export function userDataDir(): string {
-  return process.env.SOMA_USER_DATA || app.getPath('userData');
+  return process.env.SOMA_USER_DATA || host().app.getPath('userData');
 }
 
 export const workspacesDir = () => path.join(userDataDir(), 'workspaces');
@@ -36,12 +36,12 @@ export const logsDir = () => path.join(userDataDir(), 'logs');
 export const warmDir = () => path.join(userDataDir(), 'python-start');
 
 /** Vorlage fuer neue Projekte (liegt neben dem Programm, spaeter im Installationspaket). */
-export const templateDir = () => path.join(app.getAppPath(), 'resources', 'template');
+export const templateDir = () => path.join(host().app.getAppPath(), 'resources', 'template');
 
 /** Mitgelieferte Skills (E17), je einer als Markdown. */
-export const skillsDir = () => path.join(app.getAppPath(), 'resources', 'skills');
+export const skillsDir = () => path.join(host().app.getAppPath(), 'resources', 'skills');
 /** Bilder der Anleitung (E83), der Text ist der mitgelieferte Skill `soma-app.md`. */
-export const helpDir = () => path.join(app.getAppPath(), 'resources', 'help');
+export const helpDir = () => path.join(host().app.getAppPath(), 'resources', 'help');
 /** Eigene und bearbeitete Skills des Nutzers (E78), gelten für die ganze App. */
 export const userSkillsDir = () => path.join(userDataDir(), 'skills');
 /** Beide Ordner der Bibliothek der Skills. */
@@ -50,14 +50,14 @@ export const skillDirs = (): SkillDirs => ({ bundled: skillsDir(), user: userSki
 export const libraryBackupsDir = () => path.join(backupsDir(), 'skills-library');
 
 /** App-Icon (E44) für Fenster und Taskleiste. Windows nimmt die ICO mit allen Größen, andere Systeme das PNG. */
-export const appIcon = () => path.join(app.getAppPath(), 'resources', process.platform === 'win32' ? 'icon.ico' : 'icon.png');
+export const appIcon = () => path.join(host().app.getAppPath(), 'resources', process.platform === 'win32' ? 'icon.ico' : 'icon.png');
 
 /**
  * Mitgelieferte Basisumgebung im Installationspaket: eigenständiges Python mit soma, gebaut von
  * python/scripts/build_runtime.py, von electron-builder nach resources/python gelegt. Nur in der installierten App.
  */
 export function bundledPythonDir(): string | null {
-  if (!app.isPackaged) return null;
+  if (!host().app.isPackaged) return null;
   const dir = path.join(process.resourcesPath, 'python');
   return fs.existsSync(path.join(dir, process.platform === 'win32' ? 'python.exe' : path.join('bin', 'python3'))) ? dir : null;
 }
@@ -113,7 +113,7 @@ export function pythonBinDirs(): string[] {
  * gestartet stimmt der PATH schon. Scheitert die Shell (Zeitlimit, ungewohnte Ausgabe), bleibt der PATH, wie er ist.
  */
 export function adoptLoginShellPath(): void {
-  if (process.platform === 'win32' || !app.isPackaged) return;
+  if (process.platform === 'win32' || !host().app.isPackaged) return;
   const shell = process.env.SHELL || '/bin/bash';
   try {
     const r = spawnSync(shell, ['-ilc', 'printf "\\n__SOMA_PATH__=%s\\n" "$PATH"'], { encoding: 'utf8', timeout: 5000, stdio: ['ignore', 'pipe', 'ignore'] });

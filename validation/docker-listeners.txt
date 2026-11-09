@@ -1,0 +1,2 @@
+NAME                         IMAGE                      COMMAND                  SERVICE   CREATED         STATUS                   PORTS
+soma-headless-check-soma-1   soma-headless-check-soma   "node dist/web/serve…"   soma      4 minutes ago   Up 4 minutes (healthy)   127.0.0.1:8876->8876/tcp

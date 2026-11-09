@@ -1,0 +1,4 @@
+COMMAND   PID    USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
+node    57393 sukbeom   15u  IPv4 0xaaa803ee8347dbb2      0t0  TCP 127.0.0.1:8765 (LISTEN)
+  PID  PPID COMMAND
+57393 57378 /opt/homebrew/Cellar/node/26.12.1_1/bin/node /Users/sukbeom/Documents/CADAI/SOMA/app/dist/web/server.js

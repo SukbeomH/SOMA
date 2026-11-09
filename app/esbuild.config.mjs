@@ -6,7 +6,12 @@ import path from 'node:path';
 // Versionsnummer von SOMA (E68) aus package.json, für alle Teile gleich (src/shared/version.ts)
 const { version } = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const common = { bundle: true, sourcemap: true, logLevel: 'info', target: 'es2022', define: { __SOMA_VERSION__: JSON.stringify(version) } };
+const webOnly = process.argv.includes('--web');
 await Promise.all([
+  build({ ...common, entryPoints: ['src/web/server.ts'], outfile: 'dist/web/server.js', platform: 'node', format: 'cjs', external: ['node-pty', 'dugite'], metafile: true }).then(result => {
+    if (Object.keys(result.metafile.inputs).some(p => /electron/.test(p))) throw new Error('Electron leaked into the web server');
+  }),
+  ...(!webOnly ? [
   build({ ...common, entryPoints: ['src/main/main.ts'], outfile: 'dist/main/main.js', platform: 'node', format: 'cjs',
           external: ['electron', 'node-pty', 'dugite'] }),
   build({ ...common, entryPoints: ['src/preload/preload.ts'], outfile: 'dist/preload/preload.js', platform: 'node', format: 'cjs',
@@ -15,6 +20,7 @@ await Promise.all([
   build({ ...common, entryPoints: ['src/preload/render-preload.ts'], outfile: 'dist/preload/render-preload.js', platform: 'node', format: 'cjs',
           external: ['electron'] }),
   build({ ...common, entryPoints: ['src/renderer/render.ts'], outfile: 'dist/renderer/render.js', platform: 'browser', format: 'iife' }),
+  ] : []),
   build({ ...common, entryPoints: ['src/renderer/main.ts'], outfile: 'dist/renderer/main.js', platform: 'browser', format: 'iife' }),
   // Worker von pdf.js als klassisches Skript: Module aus file:// lädt Chromium nicht (E54)
   build({ ...common, sourcemap: false, entryPoints: ['node_modules/pdfjs-dist/build/pdf.worker.mjs'], outfile: 'dist/renderer/pdf.worker.js', platform: 'browser', format: 'iife' }),
@@ -28,6 +34,7 @@ const components = Object.keys(dependencies).sort().map((name) => {
     return { name, version: p.version ?? '', license: typeof p.license === 'string' ? p.license : p.license?.type ?? '' };
   } catch { return { name, version: '', license: '' }; }
 });
+fs.mkdirSync('dist/main', { recursive: true });
 fs.writeFileSync('dist/main/components.json', `${JSON.stringify(components, null, 2)}\n`);
 
 // Lizenztexte der npm-Pakete nach dist/licenses/<paket>/ (THIRD_PARTY_NOTICES.md). esbuild übernimmt beim Bündeln nur
@@ -88,3 +95,6 @@ for (const [pkg, weights] of [['ibm-plex-sans', [400, 500, 600]], ['ibm-plex-mon
     }
   }
 }
+
+await build({ ...common, entryPoints: ['src/preload/preload.ts'], outfile: 'dist/renderer/web-preload.js', platform: 'browser', format: 'iife',
+  alias: { electron: path.resolve('src/web/electron.ts') }, define: { ...common.define, 'process.env.SOMA_TEST': '"0"', 'process.env.SOMA_TEST_START': '"home"', 'process.env.SOMA_WEB': '"0"' } });

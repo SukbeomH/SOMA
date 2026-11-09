@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { app } from 'electron';
+import { host } from './host';
 import { exec } from 'dugite';
 import type { AboutInfo, AgentInfo, ComponentInfo } from '../shared/types';
 import { SOMA_VERSION } from '../shared/version';
@@ -91,7 +91,7 @@ function pythonInfo(): Promise<AboutInfo['python']> {
 /** npm-Pakete, die die App mitbringt (dependencies aus package.json), geschrieben von esbuild.config.mjs. */
 function npmComponents(): ComponentInfo[] {
   try {
-    const raw = JSON.parse(fs.readFileSync(path.join(__dirname, 'components.json'), 'utf8')) as unknown;
+    const raw = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'main', 'components.json'), 'utf8')) as unknown;
     return Array.isArray(raw) ? raw.filter((c): c is ComponentInfo => !!c && typeof c.name === 'string' && typeof c.version === 'string').map((c) => ({ name: c.name, version: c.version, license: String(c.license ?? '') })) : [];
   } catch { return []; }
 }
@@ -125,7 +125,7 @@ export async function aboutInfo(agents: () => Promise<AgentInfo[]>): Promise<Abo
       { label: 'Your skills', path: userSkillsDir() },
       { label: 'Logs', path: logsDir() },
       { label: 'Python', path: python.exe },
-      { label: 'Program', path: app.getAppPath() },
+      { label: 'Program', path: host().app.getAppPath() },
     ],
     components: npmComponents(),
   };
@@ -137,7 +137,7 @@ export function aboutText(a: AboutInfo): string {
   const lines = [
     `SOMA ${a.version}`,
     `soma (Python) ${pkg('soma') ?? 'not found'}, Python ${a.python.version ?? 'not found'}, CadQuery ${pkg('cadquery') ?? '?'}, OCP ${pkg('cadquery-ocp') ?? '?'}`,
-    `Electron ${a.electron}, Chromium ${a.chrome}, Node.js ${a.node}, Git ${a.git ?? 'not found'}`,
+    `${a.electron ? `Electron ${a.electron}, Chromium ${a.chrome}, ` : ''}Node.js ${a.node}, Git ${a.git ?? 'not found'}`,
     `OS: ${a.os}`,
     `Agents: ${a.agents.map((x) => `${x.label} (${x.found ? 'found' : 'not installed'})`).join(', ') || 'none detected'}`,
     ...a.paths.map((p) => `${p.label}: ${p.path}`),
