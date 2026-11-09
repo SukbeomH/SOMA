@@ -1,0 +1,70 @@
+{
+  "platform": "macOS arm64",
+  "listener": "127.0.0.1:8765",
+  "png": {
+    "model": [
+      1280,
+      720
+    ],
+    "analysis": [
+      1280,
+      720
+    ],
+    "terminal_cli": [
+      640,
+      360
+    ]
+  },
+  "video": {
+    "codec": "h264",
+    "size": [
+      1280,
+      720
+    ],
+    "fps": 30,
+    "frames": 61,
+    "duration_seconds": 2.033333,
+    "browser_playback": "ended, no error",
+    "cancel": "error shown, saved file SHA-256 unchanged"
+  },
+  "fem": {
+    "seconds": 1.47,
+    "mesh": {
+      "size": 3.0,
+      "auto": false,
+      "nodes": 1981,
+      "elements": 1018,
+      "dofs": 5628,
+      "solver": "direct"
+    },
+    "applied_N": [
+      100.0,
+      0.0,
+      0.0
+    ],
+    "reaction_N": [
+      -100.0,
+      0.0,
+      0.0
+    ],
+    "max_displacement_mm": 0.0006,
+    "notes": [
+      "CalculiX (ccx) was not found, calculated with the built-in solver (no contact possible)."
+    ],
+    "missing_study": "explicit error, no new successful result"
+  },
+  "checks": [
+    "typecheck",
+    "web isolation tests",
+    "headless integration including render busy/cancel/disconnect",
+    "desktop smoke",
+    "desktop animation/render/analysis regression"
+  ],
+  "limits": [
+    "browser must remain connected for rendering",
+    "100 MiB per render artifact",
+    "FEM contact/CalculiX not tested",
+    "Docker/Linux x64 FEM not enabled or tested",
+    "integration benchmark, not printed-part strength certification"
+  ]
+}

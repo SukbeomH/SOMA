@@ -1,0 +1,155 @@
+{
+  "version": 1,
+  "id": "study",
+  "kind": "fem",
+  "title": "Axial bar benchmark",
+  "quantity": "Safety factor",
+  "unit": "",
+  "bad": "low",
+  "threshold": 2.0,
+  "tolerance": null,
+  "range": [
+    0.0,
+    20.0
+  ],
+  "up": null,
+  "parts": [
+    {
+      "name": "Bar",
+      "group": null,
+      "area": 1800.0,
+      "critical": 0.0,
+      "triangles": 2336,
+      "min": 99.0,
+      "max": 99.0,
+      "worst": {
+        "value": 99.0,
+        "at": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "stress": {
+        "value": 1.269,
+        "at": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "displacement": {
+        "value": 0.0006,
+        "at": [
+          40.0,
+          10.0,
+          10.0
+        ]
+      },
+      "material": {
+        "name": "Aluminium 6082",
+        "E": 70000.0,
+        "nu": 0.33,
+        "density": 2.7,
+        "strength": 250.0,
+        "note": null
+      },
+      "coarse": {
+        "stress": 1.121,
+        "change": 0.1329
+      },
+      "peakAt": [
+        "at the edge of a fixed support"
+      ]
+    }
+  ],
+  "notes": [
+    "CalculiX (ccx) was not found, calculated with the built-in solver (no contact possible)."
+  ],
+  "created": 1794223312.4320252,
+  "neutral": null,
+  "seconds": 8.44,
+  "command": [
+    "analyze",
+    "fem",
+    "study.py"
+  ],
+  "fem": {
+    "study": "study.py",
+    "bcs": [
+      {
+        "kind": "fix",
+        "part": "Bar",
+        "label": "Bar <X",
+        "area": 100.0,
+        "at": [
+          0.0,
+          5.0,
+          5.0
+        ],
+        "axes": "xyz",
+        "reaction": [
+          -100.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "kind": "force",
+        "part": "Bar",
+        "label": "Bar >X",
+        "area": 100.0,
+        "at": [
+          40.0,
+          5.0,
+          5.0
+        ],
+        "total": [
+          100.0,
+          0.0,
+          0.0
+        ]
+      }
+    ],
+    "applied": [
+      100.0,
+      0.0,
+      0.0
+    ],
+    "reaction": [
+      -100.0,
+      0.0,
+      0.0
+    ],
+    "balance": 0.0,
+    "gravity": null,
+    "maxDisp": 0.0006,
+    "diag": 42.426,
+    "touching": [],
+    "contacts": [],
+    "bolts": [],
+    "mesh": {
+      "size": 3.0,
+      "auto": false,
+      "nodes": 1980,
+      "elements": 1017,
+      "dofs": 5625,
+      "solver": "direct"
+    },
+    "coarse": {
+      "size": 4.8,
+      "elements": 431
+    }
+  },
+  "summary": "FEM \"Axial bar benchmark\" (study.py, linear elastic, safety factor 2 required, critical below):\n  fixed: Bar <X (100.0 mm\u00b2), reaction force (-100.0, 0.0, 0.0) N\n  force: Bar >X (100.0 mm\u00b2), (100.0, 0.0, 0.0) N\n  Bar (Aluminium 6082, E 70000 MPa, strength 250 MPa): highest von Mises stress 1.3 MPa at (0.0, 0.0, 0.0), lowest safety factor 99.00, nothing below 2, largest displacement 0.001 mm at (40.0, 10.0, 10.0)\nCheck: reaction forces in total (-100.0, 0.0, 0.0) N, loads (100.0, 0.0, 0.0) N (in equilibrium). Mesh 1017 tetrahedra (10 nodes, edge length up to 3 mm), 5625 unknowns, direct; Bar with a coarser mesh 1.1 MPa (fine mesh +13 %).\nNote: CalculiX (ccx) was not found, calculated with the built-in solver (no contact possible).",
+  "file": ".soma/results/study.glb",
+  "verification": {
+    "platform": "macOS arm64",
+    "DISPLAY": "unset",
+    "WAYLAND_DISPLAY": "unset",
+    "analytical_uniform_axial_stress_MPa": 1.0,
+    "analytical_axial_extension_mm": 0.0005714285714285715,
+    "reported_displacement_is_rounded": true,
+    "scope": "integration benchmark, not validation of a printed bracket or contact model"
+  }
+}

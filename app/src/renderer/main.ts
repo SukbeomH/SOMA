@@ -1,3 +1,4 @@
+import { installBrowserRendering } from '../web/render-browser';
 import { affectsBuild } from '../shared/editable';
 import { DEFAULT_SETTINGS, type SettingsPatch, type SettingsResult, type SettingsState } from '../shared/settings';
 import type { AgentInfo, AnimEntry, BuildStatus, CadQueryImportResult, DrawingEntry, DrawingList, ExportResult, FileNode, ImportResult, MeshExportOptions, ModelMap, PartMap, PreviewResult, ProjectInfo, ProjectListEntry, ResultEntry, SaveState, UpdateInfo } from '../shared/types';
@@ -1204,7 +1205,7 @@ async function onProject(p: ProjectInfo): Promise<void> {
   if (panel === 'files') void refreshFiles();
   void versions.refresh();
   void refreshSaveState();
-  void terminals.add({ title: 'Terminal' });
+  void terminals.add({ title: 'Terminal', restore: location.protocol === 'http:' });
   void refreshAgents();
   const st = await api.build.status();
   renderBuild(st);
@@ -1732,9 +1733,19 @@ function renderAgentMenu(): void {
     b.addEventListener('click', () => { setAgentCollapsed(false); void terminals.add({ command: a.command, title: a.label }); });
     return b;
   }));
+  if (location.protocol === 'http:' && agents.some(a => a.command === 'codex' && a.found)) {
+    const resume = el('button', { className: 'mi', textContent: 'Resume Codex in this model', title: 'Continue the most recent Codex session for this model folder' });
+    resume.setAttribute('role', 'menuitem');
+    resume.addEventListener('click', () => { setAgentCollapsed(false); void terminals.add({ command: 'codex resume --last --no-alt-screen', title: 'Codex resume' }); });
+    $('agent-list').append(resume);
+  }
   if (!agents.length) $('agent-list').append(el('div', { className: 'mnote', textContent: 'Looking for agents …' }));
 }
 $('btn-term-add').addEventListener('click', () => { renderAgentMenu(); menus.toggle($('menu-agents'), $('btn-term-add')); });
+if (location.protocol === 'http:') {
+  $('btn-import').title = 'Upload files from this browser into inputs/. Existing files are not overwritten.';
+  $('dropzone').textContent = 'Use Import to upload files into inputs/.';
+}
 $('btn-term-plain').addEventListener('click', () => void terminals.add({ title: 'Terminal' }));
 $('btn-copy-path').addEventListener('click', () => void api.project.copyPath().then((r) => {
   toast(r.ok ? 'Path copied. Open it as the project folder in your agent app.' : r.error ?? 'The path could not be copied.', r.ok ? 'ok' : 'error');
@@ -2128,4 +2139,9 @@ if (api.testMode) {
     buildStarts: () => buildStarts,
     editor: code.testApi(),
   };
+}
+
+if (window.somaWebRendering) {
+  const { on, invoke, client } = window.somaWebRendering;
+  installBrowserRendering(on, invoke, client);
 }

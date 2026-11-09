@@ -528,7 +528,7 @@ export interface SomaApi {
   /** DXF-Ansicht im Code-Panel (E80). `known`: Fingerabdruck des gezeigten Stands, bei gleicher Datei kommt nur `unchanged`. */
   dxf: { view(rel: string, known?: string | null): Promise<DxfResult> };
   term: {
-    create(opts?: { command?: string; title?: string }): Promise<number>;
+    create(opts?: { command?: string; restore?: boolean; title?: string }): Promise<number>;
     write(id: number, data: string): void;
     resize(id: number, cols: number, rows: number): void;
     kill(id: number): void;
@@ -649,3 +649,10 @@ export interface RenderApi {
 }
 
 declare global { interface Window { soma: SomaApi; somaRender: RenderApi } }
+
+export interface WebRenderingApi {
+  on(channel: string, callback: (event: undefined, value: unknown) => void): void;
+  invoke(channel: string, ...args: unknown[]): Promise<unknown>;
+  client: string;
+}
+declare global { interface Window { somaWebRendering?: WebRenderingApi } }

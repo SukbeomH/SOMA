@@ -1,3 +1,4 @@
+import { WebRenderService } from './render-service';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
@@ -14,11 +15,15 @@ import { warmUp, stopWarm } from '../main/build';
 import { startBridge, stopBridge } from '../main/bridge';
 import { sweepDiscarded } from '../main/workspace';
 import { renameOldSkillFiles } from '../main/skilllibrary';
+import { WebFiles } from './files';
 import { SOMA_VERSION } from '../shared/version';
 
+process.env.SOMA_WEB = '1';
 const appDir = path.resolve(__dirname, '../..');
 const dataDir = process.env.SOMA_USER_DATA || path.resolve(appDir, '..', '.soma-web');
 process.env.SOMA_USER_DATA = dataDir;
+const files = new WebFiles(dataDir);
+const exportChannels = new Set(['build:export', 'project:exportZip', 'project:exportCadQuery', 'project:save', 'drawings:export']);
 const downloads = path.join(dataDir, 'exports');
 fs.mkdirSync(downloads, { recursive: true });
 const handlers = new Map<string, (...args: never[]) => unknown>();
@@ -54,14 +59,22 @@ function optionsOf<T>(first: T | Electron.BaseWindow, second?: T): T {
   return first as T;
 }
 async function pickPath(options: SaveDialogOptions | OpenDialogOptions, save: boolean): Promise<string[]> {
+  if ('buttonLabel' in options && options.buttonLabel === 'Export here') {
+    return [fs.mkdtempSync(path.join(downloads, 'export-'))];
+  }
   const value = await ask('web:path', {
     title: options.title || (save ? 'Save file' : 'Open file'), save,
     directory: 'properties' in options && options.properties?.some(p => p === 'openDirectory'),
     multiple: 'properties' in options && options.properties?.some(p => p === 'multiSelections'),
-    defaultPath: save ? path.join(downloads, path.basename(options.defaultPath || 'model.soma')) : options.defaultPath || '',
+    accept: options.filters?.flatMap(f => f.extensions).filter(e => e !== '*').map(e => `.${e}`).join(',') || '',
+    defaultPath: save ? path.basename(options.defaultPath || 'model.soma') : options.defaultPath || '',
   });
   if (typeof value !== 'string' || !value.trim()) return [];
   const paths = value.split('\n').map(p => p.trim()).filter(Boolean);
+  if (save && paths.length === 1 && !path.isAbsolute(paths[0])) {
+    if (paths[0] !== path.basename(paths[0]) || /[\\/\x00-\x1f]/.test(paths[0]) || paths[0] === '.' || paths[0] === '..') throw new Error('Use a file name, not a relative path.');
+    paths[0] = path.join(fs.mkdtempSync(path.join(downloads, 'export-')), paths[0]);
+  }
   for (const p of paths) {
     if (!path.isAbsolute(p)) throw new Error('Enter an absolute path on the SOMA server.');
     if (save) fs.mkdirSync(path.dirname(p), { recursive: true });
@@ -107,10 +120,12 @@ configureHost({
 });
 setDialogHost(question);
 let closing = false;
-const controller = new ProjectController(() => null, { send: publishWeb, isDestroyed: () => closing }, {
-  run: async () => ({ ok: false, files: [], warnings: [], error: 'Image/video export and soma render require the desktop edition. The web viewer renders in your browser; no server display is installed.' }),
-  close: () => {},
-});
+const renders = new WebRenderService(files);
+register('web:renderDone', (_event: unknown, id: unknown, value: unknown) => renders.done(id, value));
+register('web:renderProgress', (_event: unknown, id: unknown, value: unknown) => renders.progress(id, value));
+const controller = new ProjectController(() => null, { send: publishWeb, isDestroyed: () => closing }, renders);
+register('web:still', (_event: unknown, result: unknown) => controller.renderStill(result));
+register('web:fem', (_event: unknown, study: unknown) => controller.runFem(study));
 registerRpc(controller, { handle: register, on: register });
 initLog(logsDir(), { version: SOMA_VERSION, runtime: `Node ${process.version}`, python: pythonExe(), appData: userDataDir() });
 async function close(): Promise<void> {
@@ -128,8 +143,15 @@ async function main(): Promise<void> {
   const url = await startWeb(async (channel, args) => {
     const handler = handlers.get(channel);
     if (!handler) throw new Error('Unknown request');
-    return Reflect.apply(handler, undefined, [undefined, ...args]);
-  }, path.join(appDir, 'dist', 'renderer'));
+    const result: unknown = await Reflect.apply(handler, undefined, [undefined, ...args]);
+    if (exportChannels.has(channel) && result && typeof result === 'object'
+        && !('error' in result && result.error) && !('ok' in result && result.ok === false)) {
+      const paths = 'files' in result && Array.isArray(result.files) ? result.files.filter((p): p is string => typeof p === 'string') : [];
+      if ('zipPath' in result && typeof result.zipPath === 'string') paths.push(result.zipPath);
+      if (paths.length) publishWeb('web:downloads', paths.map(file => files.grant(file)));
+    }
+    return result;
+  }, path.join(appDir, 'dist', 'renderer'), files);
   warmUp(); console.log(`[soma-web] ${url} (Node.js; no Electron or display)`);
 }
 void main().catch(async error => { console.error(error); await close(); process.exitCode = 1; });

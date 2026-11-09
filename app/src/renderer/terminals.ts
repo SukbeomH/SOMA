@@ -38,12 +38,12 @@ export class TerminalTabs {
     new ResizeObserver(() => this.fitActive()).observe(panes);
   }
 
-  async add(opts: { command?: string; title?: string } = {}): Promise<number | null> {
+  async add(opts: { command?: string; restore?: boolean; title?: string } = {}): Promise<number | null> {
     // Vor dem Anlegen der Shell warten: Danach darf bis zum Eintrag in `tabs` nichts mehr warten, sonst gehen Ausgaben verloren
     await fontsReady;
     let id: number;
     try {
-      id = await window.soma.term.create({ command: opts.command });
+      id = await window.soma.term.create({ command: opts.command, restore: opts.restore });
     } catch (e) {
       // Shell startet nicht (fehlt, keine Rechte): sagen, statt still kein Terminal zu zeigen
       toast(String(e instanceof Error ? e.message : e).replace(/^Error invoking remote method '[^']+': (Error: )?/, ''), 'error');

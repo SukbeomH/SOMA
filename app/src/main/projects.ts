@@ -931,6 +931,25 @@ export class ProjectController {
     return s.drawings.request(f);
   }
 
+  async runFem(study: unknown): Promise<{ ok: boolean; error?: string }> {
+    const s = this.need();
+    if (typeof study !== 'string' || !/^[a-zA-Z0-9_][a-zA-Z0-9_./ -]*\.py$/.test(study) || study.includes('..')) return { ok: false, error: 'Choose a Python study inside the project.' };
+    try {
+      resolveInside(s.dir, study);
+      await s.builds.whenIdle();
+      const r = await runSoma(['analyze', 'fem', study, '--project', s.dir, '--json'], s.dir, 60 * 60_000);
+      this.send('fs:changed');
+      return r.ok ? { ok: true } : { ok: false, error: (r.err || r.out).slice(-4000) || 'FEM failed.' };
+    } catch (e) { return { ok: false, error: String(e) }; }
+  }
+
+  renderStill(result: unknown): Promise<RenderResult> {
+    const s = this.need();
+    const req = checkRequest(s.dir, { kind: 'still', size: [1280, 720], out: result ? 'renders/analysis.png' : 'renders/model.png', result: result || null });
+    if (typeof req === 'string') return Promise.resolve({ ok: false, files: [], warnings: [], error: req });
+    return this.render(req, false);
+  }
+
   results(): ResultEntry[] { return listResults(this.need().dir); }
 
   rerunResult(id: unknown): Promise<{ ok: boolean; error?: string }> {

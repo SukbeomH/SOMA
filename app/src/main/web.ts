@@ -2,6 +2,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import type { WebFiles } from '../web/files';
 export type Dispatch = (channel: string, args: unknown[]) => Promise<unknown>;
 
 export const webChannels = new Set<string>();
@@ -9,6 +10,8 @@ const eventChannels = new Set(['term:write', 'term:resize', 'term:kill', 'editor
 const clients = new Set<http.ServerResponse>();
 let activeClient: string | null = null;
 let server: http.Server | undefined;
+
+export function webClient(): string | null { return activeClient; }
 
 export function publishWeb(channel: string, ...args: unknown[]): void {
   const payload = `data: ${JSON.stringify({ channel, args })}\n\n`;
@@ -18,7 +21,7 @@ export function stopWeb(): void {
   for (const client of clients) client.end();
   clients.clear(); activeClient = null; server?.close();
 }
-export async function startWeb(dispatch: Dispatch, root: string): Promise<string> {
+export async function startWeb(dispatch: Dispatch, root: string, files?: WebFiles): Promise<string> {
   const port = Number(process.env.SOMA_WEB_PORT || 8765);
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Invalid SOMA_WEB_PORT');
   const origin = `http://127.0.0.1:${port}`;
@@ -47,9 +50,18 @@ export async function startWeb(dispatch: Dispatch, root: string): Promise<string
         const heartbeat = setInterval(() => res.write(': heartbeat\n\n'), 15000);
         res.on('close', () => { clearInterval(heartbeat); clients.delete(res); if (activeClient === client) activeClient = null; }); return;
       }
-      if (req.method === 'POST' && url.pathname === '/rpc') {
+      if (req.method === 'GET' && url.pathname.startsWith('/download/') && files) {
+        await files.download(url.pathname.slice('/download/'.length), res); return;
+      }
+      if (req.method === 'POST' && (url.pathname === '/rpc' || url.pathname === '/upload')) {
         if (req.headers.origin !== origin || req.headers['x-soma-web'] !== '1') { send(res, 403, { error: 'Invalid request origin' }); return; }
         if (!activeClient || req.headers['x-soma-client'] !== activeClient) { send(res, 409, { error: 'This browser is not connected. Close other SOMA tabs and reload.' }); return; }
+        if (url.pathname === '/upload') {
+          if (!files) { send(res, 404, { error: 'Uploads unavailable' }); return; }
+          try { send(res, 200, { path: await files.upload(req, url.searchParams.get('name') || '') }); }
+          catch (error) { send(res, 400, { error: error instanceof Error ? error.message : 'Upload failed' }); }
+          return;
+        }
         const chunks: Buffer[] = []; let size = 0;
         for await (const chunk of req) { const b = Buffer.from(chunk); size += b.length; if (size > 12 * 1024 * 1024) { send(res, 413, { error: 'Request too large' }); return; } chunks.push(b); }
         const body: unknown = JSON.parse(Buffer.concat(chunks).toString('utf8'));

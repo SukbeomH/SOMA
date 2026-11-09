@@ -149,7 +149,7 @@ export function registerRpc(ctl: ProjectController, ipcMain: RpcRegistrar, win: 
   });
   ipcMain.handle('dxf:view', (_e, rel: unknown, known: unknown) => viewDxf(dir(), String(rel), known == null ? null : String(known)));
 
-  ipcMain.handle('term:create', (_e, opts?: { command?: string }) => ctl.need().terminals.create(opts));
+  ipcMain.handle('term:create', (_e, opts?: { command?: string; restore?: boolean }) => ctl.need().terminals.create(opts));
   ipcMain.on('term:write', (_e, id: number, data: string) => ctl.session?.terminals.write(id, data));
   ipcMain.on('term:resize', (_e, id: number, cols: number, rows: number) => ctl.session?.terminals.resize(id, cols, rows));
   ipcMain.on('term:kill', (_e, id: number) => ctl.session?.terminals.kill(id));

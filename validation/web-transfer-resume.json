@@ -1,0 +1,34 @@
+{
+  "platform": "macOS arm64",
+  "url": "http://127.0.0.1:8765",
+  "listener": "127.0.0.1:8765 (lsof verified)",
+  "browser": {
+    "upload": "validation/upload-fixture.txt imported into inputs/",
+    "download": "Lid.step saved through browser",
+    "codex": "actual previous conversation restored by menu and automatically after reload/reopen",
+    "screenshots": [
+      "browser-download.png",
+      "browser-auto-resume.png"
+    ]
+  },
+  "downloaded_step": {
+    "valid": true,
+    "solids": 1,
+    "volume_mm3": 4546.336293856421
+  },
+  "checks_passed": [
+    "TypeScript typecheck",
+    "web tests",
+    "unit tests",
+    "desktop smoke",
+    "headless Node/CAD/PTY integration",
+    "HTTP upload bytes, duplicate names, traversal, size and origin rejection",
+    "STEP/STL/Python/ZIP/SOMA downloads",
+    "persisted Codex resume dispatch (CLI fixture in integration test)"
+  ],
+  "limits": [
+    "resume uses latest Codex session for project directory, not exact PTY or multiple tabs",
+    "PNG/video implementation remains pending",
+    "Docker/Linux x64 not rerun for these changes"
+  ]
+}
