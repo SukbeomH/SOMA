@@ -1,10 +1,11 @@
+import { terminalImages } from './terminal-images';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebglAddon } from '@xterm/addon-webgl';
 import { Terminal } from '@xterm/xterm';
 import { icon } from './icons';
 import { el, toast } from './ui';
 
-interface Tab { id: number; term: Terminal; fit: FitAddon; pane: HTMLElement; tab: HTMLElement; title: string; agent: boolean; exited: boolean }
+interface Tab { id: number; term: Terminal; fit: FitAddon; pane: HTMLElement; tab: HTMLElement; title: string; agent: boolean; exited: boolean; disposeImages?: () => void }
 
 /**
  * Normaler und fetter Schnitt der Terminalschrift, vorab geladen (beide Teilmengen, deshalb „aā“). Ohne echten fetten
@@ -93,7 +94,9 @@ export class TerminalTabs {
     // Strg+V selbst einfügen: xterm schickt sonst nur das Steuerzeichen ^V. PowerShell liest daraufhin die Zwischenablage
     // selbst, Agenten wie OpenCode erwarten aber ein echtes Einfügen (bracketed paste). Ohne Text in der Zwischenablage
     // (etwa ein Bild) geht ^V weiter, damit der Agent sie selbst lesen kann.
+    const images = window.somaWebRendering ? terminalImages(pane, term, id, () => this.tabs.has(id) && !this.tabs.get(id)?.exited) : undefined;
     term.attachCustomKeyEventHandler((e) => {
+      if (images) return images.key(e);
       if (!e.ctrlKey || e.altKey || e.metaKey || e.key.toLowerCase() !== 'v') return true;
       e.preventDefault();
       if (e.type === 'keydown') {
@@ -114,9 +117,15 @@ export class TerminalTabs {
     x.addEventListener('click', (e) => { e.stopPropagation(); this.close(id); });
     label.addEventListener('click', () => this.activate(id));
     const tab = el('div', { className: 'tab' }, label, x);
+    if (images) {
+      const pasteImage = el('button', { title: 'Paste PNG image into this terminal', textContent: '＋Image' });
+      pasteImage.setAttribute('aria-label', 'Paste image into ' + title);
+      pasteImage.onclick = () => { this.activate(id); void images.readClipboard(false); };
+      tab.insertBefore(pasteImage, x);
+    }
     this.tabBar.insertBefore(tab, this.anchor);
 
-    this.tabs.set(id, { id, term, fit, pane, tab, title, agent, exited: false });
+    this.tabs.set(id, { id, term, fit, pane, tab, title, agent, exited: false, disposeImages: images?.dispose });
     this.activate(id);
     return id;
   }
@@ -137,6 +146,7 @@ export class TerminalTabs {
     const t = this.tabs.get(id);
     if (!t) return;
     window.soma.term.kill(id);
+    t.disposeImages?.();
     t.term.dispose(); t.pane.remove(); t.tab.remove();
     this.tabs.delete(id);
     this.used = this.used.filter((x) => x !== id);

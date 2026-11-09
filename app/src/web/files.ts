@@ -32,10 +32,11 @@ export class WebFiles {
     } finally { await handle?.close(); }
   }
 
-  takeUpload(file: string): Buffer {
+  takeUpload(file: string, maxBytes = MAX_UPLOAD): Buffer {
     const root = fs.realpathSync(path.join(this.data, 'uploads')) + path.sep;
     const resolved = fs.realpathSync(file);
     if (!resolved.startsWith(root) || !fs.statSync(resolved).isFile()) throw new Error('Invalid render upload path');
+    if (fs.statSync(resolved).size > maxBytes) throw new Error('Uploaded image is too large');
     const data = fs.readFileSync(resolved);
     if (!data.length || data.length > MAX_UPLOAD) throw new Error('Empty or oversized render result');
     fs.unlinkSync(resolved);

@@ -42,6 +42,8 @@ export class TerminalManager {
 
   constructor(private readonly wc: EventSink, private readonly dir: string) {}
 
+  has(id: number): boolean { return this.terms.has(id); }
+
   private resumeFile(): string {
     const key = crypto.createHash('sha256').update(path.resolve(this.dir)).digest('hex');
     return path.join(userDataDir(), 'terminal-resume', `${key}.json`);

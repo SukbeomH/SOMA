@@ -1,3 +1,4 @@
+import { resolveInside } from '../main/files';
 import { WebRenderService } from './render-service';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -126,6 +127,21 @@ register('web:renderProgress', (_event: unknown, id: unknown, value: unknown) =>
 const controller = new ProjectController(() => null, { send: publishWeb, isDestroyed: () => closing }, renders);
 register('web:still', (_event: unknown, result: unknown) => controller.renderStill(result));
 register('web:fem', (_event: unknown, study: unknown) => controller.runFem(study));
+register('web:attachImage', (_event: unknown, project: unknown, terminal: unknown, upload: unknown) => {
+  const session = controller.need();
+  if (project !== session.id || typeof terminal !== 'number' || !session.terminals.has(terminal)) throw new Error('The target model or terminal changed. Paste again in the intended terminal.');
+  if (typeof upload !== 'string') throw new Error('Invalid image upload');
+  const png = files.takeUpload(upload, 20 * 1024 * 1024);
+  const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  if (png.length < 33 || !png.subarray(0, 8).equals(signature) || png.toString('ascii', 12, 16) !== 'IHDR') throw new Error('The clipboard file is not a PNG image');
+  const width = png.readUInt32BE(16), height = png.readUInt32BE(20);
+  if (!width || !height || width * height > 32_000_000) throw new Error('Image exceeds 32 megapixels');
+  const target = resolveInside(session.dir, `inputs/clipboard-${crypto.randomUUID()}.png`);
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, png, { flag: 'wx', mode: 0o600 });
+  publishWeb('fs:changed');
+  return target;
+});
 registerRpc(controller, { handle: register, on: register });
 initLog(logsDir(), { version: SOMA_VERSION, runtime: `Node ${process.version}`, python: pythonExe(), appData: userDataDir() });
 async function close(): Promise<void> {

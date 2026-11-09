@@ -43,6 +43,16 @@ Selection references describe the current build, not permanent face IDs. Reselec
 
 Transfer/resume validation: real browser upload, STEP download, explicit and automatic Codex resume; HTTP integration tests cover upload limits/path traversal/origin protection, export downloads, and PTY resume dispatch. Existing unit and desktop smoke tests pass. Evidence: `validation/browser-download.png`, `validation/browser-auto-resume.png`. These additions were tested on Mac; this revision has not been retested in Docker or on Linux x64.
 
+## Paste an image into the web terminal
+
+Wait for the Codex input prompt, copy an image to the clipboard, focus the Codex terminal and press **⌘V** on Mac (or use browser Paste). **Ctrl+V** and the terminal tab's **＋Image** button also support PNG clipboard data where clipboard read permission is available. A preview shows upload status; the image is saved under `inputs/clipboard-<uuid>.png` and its path is pasted into the original terminal without Enter. Codex CLI 0.167.0 recognizes this as a native `[Image #1]` attachment. Add your instruction and press Enter to send.
+
+PNG only for this first version; at most four images per paste, 20 MiB and 32 megapixels per image. Copying a file in Finder may provide a file reference rather than PNG data: open the image and copy its pixels, or use Import. Clipboard permissions vary by browser. Other CLI agents may receive a path instead of a native attachment. No server clipboard, Electron, Xvfb or new dependency is used.
+
+The upload is bound to the original model and terminal. Closing it or changing the model prevents late insertion into another terminal. Enter is blocked in that terminal while images upload. Errors remain visible and the user can paste again. The preview's × only dismisses status; it does not remove the already inserted Codex attachment or saved image. Images remain in `inputs/` with the project. Plain text paste continues to work; nothing is submitted automatically.
+
+Mac validation: real PNG clipboard via ⌘V, Ctrl+V and ＋Image; native Codex attachments; model recognition of a purple triangle, orange circle and `CLIPBOARD 6285`; plain text paste. Integration tests reject another project, an unknown terminal, non-upload paths, non-PNG bytes and excessive image dimensions. Linux/Docker and other agents have not been tested for this feature.
+
 ## PNG, video and FEM in web mode
 
 - **Render / FEM → Export PNG** saves an isometric 1280×720 model image to `renders/model.png`. Choose an Analysis result to export a legend/deformation image to `renders/analysis.png`. Download links appear when complete.

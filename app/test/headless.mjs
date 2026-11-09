@@ -77,6 +77,24 @@ try {
   const terminal = await rpc('term:create');
   await rpc('term:write', terminal, "printf 'HEADLESS_PTY_OK\\n'\r");
   await until(() => events.some(e => e.channel === 'term:data' && String(e.args[1]).includes('HEADLESS_PTY_OK')), 'PTY output');
+  console.log('Checking clipboard image attachment boundaries');
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=', 'base64');
+  const stage = async bytes => (await (await upload('clipboard.png', bytes)).json()).path;
+  const staged = await stage(png);
+  const attached = await rpc('web:attachImage', info.id, terminal, staged);
+  assert.equal(path.dirname(attached), path.join(info.dir, 'inputs'));
+  assert.deepEqual(await fs.readFile(attached), png);
+  const rejected = async (...args) => {
+    const response = await fetch(origin + '/rpc', { method: 'POST', headers, body: JSON.stringify({ channel: 'web:attachImage', args }) });
+    assert.equal(response.status, 500); return response.json();
+  };
+  const wrongTarget = await stage(png);
+  assert.match((await rejected('different-project', terminal, wrongTarget)).error, /changed/);
+  assert.match((await rejected(info.id, -1, wrongTarget)).error, /changed/);
+  assert.match((await rejected(info.id, terminal, path.join(info.dir, 'model.py'))).error, /upload path/);
+  assert.match((await rejected(info.id, terminal, await stage(Buffer.from('not PNG')))).error, /not a PNG/);
+  const huge = Buffer.from(png); huge.writeUInt32BE(100000, 16); huge.writeUInt32BE(100000, 20);
+  assert.match((await rejected(info.id, terminal, await stage(huge))).error, /megapixels/);
   console.log('Checking rebuild/failure');
   const changed = source + '\n# headless integration rebuild\n';
   await rpc('fs:writeText', info.id, 'model.py', changed, source);
