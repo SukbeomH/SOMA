@@ -46,3 +46,6 @@ website/
 .downloads/
 /downloaded-exports/
 /soma-data-backup/
+
+# Native CT deployment state (versions, readiness and install lock).
+.ct-runtime/

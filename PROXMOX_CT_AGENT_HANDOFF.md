@@ -3,6 +3,69 @@
 작성 기준: 2026-11-10. 이 문서는 **Proxmox → 비특권 x86_64 Linux CT → Node/Python 직접 실행** 경로다. Docker/Compose 경로는 `PROXMOX_AGENT_HANDOFF.md`에 유지한다.
 이 가이드는 대상 CT에서 아직 실행 검증하지 않았다. 설치 명령은 대상 OS와 경로를 확인한 후 적용하고, Mac 검증을 CT 성공으로 보고하지 않는다.
 
+## 설치 스크립트로 시작하기
+
+저장소의 `scripts/ct.sh`가 아래 수동 절차를 자동화한다. 자동 설치 지원 범위는 **Ubuntu 24.04 / x86_64 / 비특권 LXC**이며 다른 OS는 변경 전에 거부한다. CT 내부 UID 매핑도 확인하지만 Proxmox 호스트의 `pct config` 확인을 대체하지 않는다.
+
+1. CT root 셸에서 이 저장소를 준비하고 관리자 패키지·계정 준비를 실행한다. 이미 checkout이 있으면 그 경로를 사용한다. Git이 없다면 CT 안에서 `apt-get update`와 `apt-get install -y git`으로 먼저 설치한다.
+
+```sh
+# CT root. 비어 있는 임시 경로를 사용한다.
+git clone --branch feat/local-web-ui https://github.com/SukbeomH/SOMA.git /tmp/SOMA-setup
+bash /tmp/SOMA-setup/scripts/ct.sh prepare
+```
+
+2. `su - soma`로 전용 사용자 로그인 셸에 들어간 뒤:
+
+```sh
+git clone --branch feat/local-web-ui https://github.com/SukbeomH/SOMA.git /home/soma/SOMA
+cd /home/soma/SOMA
+bash scripts/ct.sh install
+# FEM도 설치하려면 위 명령 대신: bash scripts/ct.sh install --fem
+bash scripts/ct.sh login
+bash scripts/ct.sh run
+```
+
+기존 checkout이면 다시 clone하지 않고 현재 SHA와 변경 상태를 확인한다. 새 포트 지정은 `SOMA_CT_PORT=8876 bash scripts/ct.sh install`로 한다. 포트는 저장되며 재설치 시 명시적으로 바꾸지 않으면 유지된다.
+
+- `run`: 전경 실행, Ctrl+C 종료. 별도 soma 셸에서 `bash scripts/ct.sh stop`도 가능.
+- `status`: HTTP와 실제 루프백 리스닝 검사. 브라우저 검증을 대체하지 않는다.
+- `check`: 타입·웹 격리·headless CAD/PTY 자동 검사. Codex는 테스트 대역이므로 실제 로그인/추론은 별도 확인.
+- `install --fem`: 제약 버전의 gmsh/pyamg 설치와 초기화 검사. 실제 study 실행은 별도 확인.
+- 설치 실패 시 성공 표시를 지워 이전 성공으로 오인하지 않게 한다. 오류 해결 후 install을 다시 실행한다. 강제 종료로 `.ct-runtime/install.lock`이 남으면 실행 중인 설치가 없는지 확인한 후 그 빈 디렉터리만 제거한다.
+
+Node **24.22.2** 공식 linux-x64 배포본과 고정 SHA-256을 사용한다. 스크립트는 Node를 `~/.local/share/soma-node/`, Codex **0.167.0**을 `~/.local/share/soma-codex/`에 설치하므로 아래 수동 `/opt/soma-node` 예시와 경로가 다르다. Python은 checkout의 `.venv`, 데이터는 `~/data`, 인증은 기본 `~/.codex`를 사용한다. 셸 설정·전역 Python·기존 인증을 변경하지 않는다. 소스 업데이트, 로그인, 서버 시작, 부팅 자동 시작은 설치가 자동 수행하지 않는다.
+
+`install`은 checkout의 `.venv`와 `app/node_modules`를 갱신한다. 서비스가 정지된 전용 checkout에서 실행하며, 업데이트 전 백업은 아래 운영 절차를 따른다. 설치 기록은 Git에서 제외된 `.ct-runtime/`의 버전 목록과 완료 시각에 남는다. 인증정보와 환경 전체를 기록하지 않는다.
+
+선택적으로 systemd를 쓰려면 soma 사용자로 unit을 생성한다:
+
+```sh
+bash scripts/ct.sh unit > /home/soma/soma-web.service
+```
+
+전경 서버를 종료하고 CT root가 파일을 검토한 뒤, **기존 unit이 없는 경우에만** 아래를 실행한다. 기존 unit이 있으면 덮어쓰지 말고 diff를 검토한다.
+
+```sh
+if test ! -e /etc/systemd/system/soma-web.service; then
+  install -m 644 /home/soma/soma-web.service /etc/systemd/system/soma-web.service &&
+    systemd-analyze verify /etc/systemd/system/soma-web.service &&
+    systemctl daemon-reload && systemctl start soma-web
+else
+  echo "Existing unit: review the diff before changing it."
+fi
+# 종료: systemctl stop soma-web
+# 재시작: systemctl restart soma-web
+```
+
+systemd 방식은 `stop:web`/스크립트 `stop` 대신 `systemctl stop`으로 종료한다. `enable`은 자동 실행하지 않는다. 포트를 바꿔 재설치한 경우 unit도 다시 생성해 차이를 검토하고 반영해야 한다.
+
+Mac 접속은 아래 6절 SSH 로컬 포워딩을 따른다. 설치 후에도 7절의 실제 Codex·브라우저·FEM 시험을 완료해야 한다.
+
+개발용 스크립트 검사는 Linux 일반 사용자로 `python3 scripts/test-ct.py`를 실행한다. OS/외부 명령을 대역으로 치환한 테스트이며 CT 실설치 검증이 아니다.
+
+---
+
 아래 내용을 대상 에이전트에게 전달한다.
 
 ---
