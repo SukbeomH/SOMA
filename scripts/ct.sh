@@ -42,8 +42,11 @@ awk '$1 == 0 && $2 != 0 { ok=1 } END { exit !ok }' /proc/self/uid_map || fail 'R
 if [[ $command == prepare ]]; then
   [[ $EUID == 0 ]] || fail 'prepare must run as CT root'
   printf '%s\n' 'Installing guest build/CAD packages and preparing soma user (no service or SSH changes).'
+  # libgmsh in the x86_64 gmsh wheel (install --fem) links these X11/font client libraries.
+  # They are shared libraries only; no X server or display is installed.
   apt-get update
-  apt-get install -y --no-install-recommends git bash ca-certificates build-essential python3.12 python3.12-venv python3.12-dev libgl1 libglu1-mesa libgomp1 libxrender1 libxext6 procps curl xz-utils iproute2
+  apt-get install -y --no-install-recommends git bash ca-certificates build-essential python3.12 python3.12-venv python3.12-dev libgl1 libglu1-mesa libgomp1 libxrender1 libxext6 procps curl xz-utils iproute2 \
+    libxcursor1 libxft2 libfontconfig1 libxinerama1
   if ! id soma >/dev/null 2>&1; then
     [[ ! -e /home/soma ]] || fail '/home/soma already exists without soma user; inspect manually'
     useradd --create-home --shell /bin/bash soma
