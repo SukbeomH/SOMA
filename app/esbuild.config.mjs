@@ -75,6 +75,8 @@ fs.copyFileSync('src/renderer/render.html', 'dist/renderer/render.html');
 fs.copyFileSync('src/renderer/style.css', 'dist/renderer/style.css');
 // App-Icon für den Ladebildschirm (index.html), der zeigt sich, bevor icons.ts geladen ist
 fs.copyFileSync('resources/icon.svg', 'dist/renderer/logo.svg');
+// Browser tab icon for the web version (PNG for browsers without SVG favicons)
+fs.copyFileSync('resources/icon.png', 'dist/renderer/logo.png');
 fs.copyFileSync(path.join('node_modules', '@xterm', 'xterm', 'css', 'xterm.css'), 'dist/renderer/xterm.css');
 
 // Daten von pdf.js (Apache 2.0): Zeichentabellen für asiatische Schriften, Ersatz für nicht eingebettete Standardschriften,

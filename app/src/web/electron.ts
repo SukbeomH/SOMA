@@ -1,6 +1,7 @@
 type Listener = (event: undefined, ...args: unknown[]) => void;
 const listeners = new Map<string, Listener[]>();
-const client = crypto.randomUUID();
+// randomUUID exists only in secure contexts; the opt-in LAN address is plain HTTP.
+const client = Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
 const events = new EventSource(`/events?client=${client}`);
 let disconnected = false;
 let terminalCreates = 0;
