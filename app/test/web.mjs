@@ -48,4 +48,30 @@ try {
   const next = new TextDecoder().decode((await reader.read()).value);
   assert.match(next, /"state":"error"/);
   console.log('PASS: loopback host/origin/cookie/client isolation, RPC allowlist and serialization, traversal, assets, SSE build errors');
-} finally { abort.abort(); stopWeb(); await fs.rm(temp, { recursive: true, force: true }); }
+} finally { abort.abort(); stopWeb(); }
+
+// Opt-in LAN address: exactly that Host/Origin is accepted besides loopback, nothing else.
+process.env.SOMA_WEB_PORT = '18767'; process.env.SOMA_WEB_LAN_HOST = '127.0.0.2';
+try {
+  await startWeb(async () => ({ ok: true }), temp);
+  const get = (host, headers = {}) => new Promise((resolve, reject) => {
+    http.get('http://127.0.0.1:18767/', { headers: { Host: host, ...headers } }, res => { res.resume(); resolve(res); }).on('error', reject);
+  });
+  assert.equal((await get('127.0.0.1:18767')).statusCode, 200);
+  const lan = await get('127.0.0.2:18767', { Origin: 'http://127.0.0.2:18767' });
+  assert.equal(lan.statusCode, 200);
+  assert.equal((await get('127.0.0.2:18767', { Origin: 'http://127.0.0.1:18767' })).statusCode, 403);
+  assert.equal((await get('127.0.0.3:18767')).statusCode, 403);
+  assert.equal((await get('127.0.0.2:18767', { 'Sec-Fetch-Site': 'cross-site' })).statusCode, 403);
+  const cookie = lan.headers['set-cookie'][0].split(';')[0];
+  const post = (origin) => new Promise((resolve, reject) => {
+    const req = http.request('http://127.0.0.1:18767/rpc', { method: 'POST', headers: { Host: '127.0.0.2:18767', Origin: origin, Cookie: cookie, 'X-Soma-Web': '1', 'X-Soma-Client': 'lan-browser-1234567890', 'Content-Type': 'application/json' } }, res => { res.resume(); resolve(res.statusCode); });
+    req.on('error', reject); req.end(JSON.stringify({ channel: 'project:current', args: [] }));
+  });
+  assert.equal(await post('http://127.0.0.1:18767'), 403);
+  assert.equal(await post('http://127.0.0.2:18767'), 409);
+  process.env.SOMA_WEB_LAN_HOST = 'lan.example';
+  stopWeb();
+  await assert.rejects(startWeb(async () => ({ ok: true }), temp), /Invalid SOMA_WEB_LAN_HOST/);
+  console.log('PASS: opt-in LAN host accepts only its own Host/Origin; invalid LAN host rejected');
+} finally { stopWeb(); delete process.env.SOMA_WEB_LAN_HOST; await fs.rm(temp, { recursive: true, force: true }); }

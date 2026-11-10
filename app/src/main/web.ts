@@ -25,6 +25,11 @@ export async function startWeb(dispatch: Dispatch, root: string, files?: WebFile
   const port = Number(process.env.SOMA_WEB_PORT || 8765);
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Invalid SOMA_WEB_PORT');
   const origin = `http://127.0.0.1:${port}`;
+  // Opt-in LAN address (an IPv4 literal). There is no login: every client that can reach it gets
+  // the terminal and the agent's account. Host/Origin must still name this address exactly.
+  const lanHost = process.env.SOMA_WEB_LAN_HOST || '';
+  if (lanHost && !/^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/.test(lanHost)) throw new Error('Invalid SOMA_WEB_LAN_HOST');
+  const origins = new Set([origin, ...(lanHost ? [`http://${lanHost}:${port}`] : [])]);
   const secret = crypto.randomBytes(32).toString('hex');
   const send = (res: http.ServerResponse, status: number, value: unknown) => {
     res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
@@ -32,9 +37,10 @@ export async function startWeb(dispatch: Dispatch, root: string, files?: WebFile
   };
   server = http.createServer(async (req, res) => {
     try {
-      if (req.headers.host !== `127.0.0.1:${port}` || (req.headers.origin && req.headers.origin !== origin)
+      const self = `http://${req.headers.host}`;
+      if (!origins.has(self) || (req.headers.origin && req.headers.origin !== self)
         || req.headers['sec-fetch-site'] === 'cross-site') { send(res, 403, { error: 'Local same-origin access only' }); return; }
-      const url = new URL(req.url || '/', origin);
+      const url = new URL(req.url || '/', self);
       if (req.method === 'GET' && url.pathname === '/') {
         res.setHeader('Set-Cookie', `soma_web=${secret}; HttpOnly; SameSite=Strict; Path=/`);
       } else if (!req.headers.cookie?.split(';').some(c => c.trim() === `soma_web=${secret}`)) {
@@ -54,7 +60,7 @@ export async function startWeb(dispatch: Dispatch, root: string, files?: WebFile
         await files.download(url.pathname.slice('/download/'.length), res); return;
       }
       if (req.method === 'POST' && (url.pathname === '/rpc' || url.pathname === '/upload')) {
-        if (req.headers.origin !== origin || req.headers['x-soma-web'] !== '1') { send(res, 403, { error: 'Invalid request origin' }); return; }
+        if (req.headers.origin !== self || req.headers['x-soma-web'] !== '1') { send(res, 403, { error: 'Invalid request origin' }); return; }
         if (!activeClient || req.headers['x-soma-client'] !== activeClient) { send(res, 409, { error: 'This browser is not connected. Close other SOMA tabs and reload.' }); return; }
         if (url.pathname === '/upload') {
           if (!files) { send(res, 404, { error: 'Uploads unavailable' }); return; }
@@ -84,6 +90,6 @@ export async function startWeb(dispatch: Dispatch, root: string, files?: WebFile
       res.writeHead(200, { 'Content-Type': mime[path.extname(file)] || 'application/octet-stream', 'Cache-Control':'no-store', 'X-Content-Type-Options':'nosniff', 'X-Frame-Options':'DENY' }); res.end(bytes);
     } catch (e) { if (!res.headersSent) send(res, 500, { error: e instanceof Error ? e.message : 'Request failed' }); else res.end(); }
   });
-  await new Promise<void>((resolve, reject) => { server!.once('error', reject); server!.listen(port, process.env.SOMA_CONTAINER === '1' ? '0.0.0.0' : '127.0.0.1', resolve); });
+  await new Promise<void>((resolve, reject) => { server!.once('error', reject); server!.listen(port, process.env.SOMA_CONTAINER === '1' || lanHost ? '0.0.0.0' : '127.0.0.1', resolve); });
   return origin;
 }

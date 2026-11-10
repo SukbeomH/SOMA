@@ -22,6 +22,8 @@ Usage: bash scripts/ct.sh COMMAND [--fem]
 
 install --fem adds constrained gmsh/pyamg. It does not run an FEM study.
 SOMA_CT_PORT defaults to 8765; install stores it for run/unit/status.
+SOMA_CT_LAN_HOST=<CT IPv4> at install also serves that address to the LAN, without login:
+anyone who can reach it gets the terminal and Codex account. Install with SOMA_CT_LAN_HOST= to remove.
 Ubuntu 24.04 x86_64 unprivileged LXC only. No Docker/display/security changes.
 HELP
 }
@@ -73,6 +75,9 @@ port=${SOMA_CT_PORT:-8765}
 if [[ -f $STATE/port && ( $command != install || -z ${SOMA_CT_PORT:-} ) ]]; then port=$(cat "$STATE/port"); fi
 [[ $port =~ ^[1-9][0-9]{3,4}$ ]] && (( port >= 1024 && port <= 65535 )) || fail 'Invalid SOMA_CT_PORT (1024..65535)'
 export SOMA_WEB_PORT=$port
+lan_host=${SOMA_CT_LAN_HOST-}
+if [[ -f $STATE/lan_host && ( $command != install || -z ${SOMA_CT_LAN_HOST+x} ) ]]; then lan_host=$(cat "$STATE/lan_host"); fi
+[[ -z $lan_host || $lan_host =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || fail 'Invalid SOMA_CT_LAN_HOST (IPv4 address of this CT)'
 
 free_port() { [[ -z $(ss -H -ltn "sport = :$1") ]] || fail "Port $1 is already listening; stop the owning service before continuing"; }
 checks() {
@@ -95,6 +100,7 @@ case "$command" in
     trap 'printf "Installation failed at line %s; no success marker was written.\n" "$LINENO" >&2' ERR
     rm -f "$STATE/ready"
     printf '%s\n' "$port" > "$STATE/port"
+    if [[ -n $lan_host ]]; then printf '%s\n' "$lan_host" > "$STATE/lan_host"; else rm -f "$STATE/lan_host"; fi
     if [[ ! -d $NODE_HOME ]]; then
       mkdir -p "$(dirname "$NODE_HOME")"
       staging=$(mktemp -d "$(dirname "$NODE_HOME")/.download.XXXXXX")
@@ -124,11 +130,12 @@ case "$command" in
     # Record package versions only; never dump environment, credentials or sessions.
     "$SOMA_PYTHON" -m pip freeze > "$STATE/python-installed.txt"
     npm --prefix "$ROOT/app" ls --depth=0 --json > "$STATE/npm-installed.json"
-    { git -C "$ROOT" rev-parse HEAD; node --version; "$SOMA_PYTHON" --version; codex --version; printf 'port=%s\nfem_requested=%s\n' "$port" "$fem"; } > "$STATE/versions.txt"
+    { git -C "$ROOT" rev-parse HEAD; node --version; "$SOMA_PYTHON" --version; codex --version; printf 'port=%s\nlan_host=%s\nfem_requested=%s\n' "$port" "$lan_host" "$fem"; } > "$STATE/versions.txt"
     date -u '+%Y-%m-%dT%H:%M:%SZ' > "$STATE/ready"
     printf 'Installed. Run: bash scripts/ct.sh login\nThen: bash scripts/ct.sh run\nURL: http://127.0.0.1:%s/\n' "$port"
+    [[ -z $lan_host ]] || printf 'LAN URL (no login): http://%s:%s/\n' "$lan_host" "$port"
     ;;
-  run) ready; free_port "$port"; exec node "$ROOT/app/scripts/start-web.mjs";;
+  run) ready; free_port "$port"; SOMA_WEB_LAN_HOST=$lan_host exec node "$ROOT/app/scripts/start-web.mjs";;
   stop) ready; exec node "$ROOT/app/scripts/stop-web.mjs";;
   check) ready; checks;;
   login) ready; exec codex login --device-auth;;
@@ -136,8 +143,13 @@ case "$command" in
     ready
     listeners=$(ss -H -ltn "sport = :$port")
     [[ -n $listeners ]] || fail 'No listening service'
-    awk -v expected="127.0.0.1:$port" '$4 != expected { bad=1 } END { exit bad }' <<< "$listeners" || fail 'Non-loopback listener found'
+    expected="127.0.0.1:$port"; [[ -z $lan_host ]] || expected="0.0.0.0:$port"
+    awk -v expected="$expected" '$4 != expected { bad=1 } END { exit bad }' <<< "$listeners" || fail "Unexpected listener (expected only $expected)"
     curl --fail --silent --show-error --max-time 5 "http://127.0.0.1:$port/" -o /dev/null
+    if [[ -n $lan_host ]]; then
+      curl --fail --silent --show-error --max-time 5 "http://$lan_host:$port/" -o /dev/null
+      printf 'LAN access enabled without login: http://%s:%s/\n' "$lan_host" "$port"
+    fi
     printf '%s\nHTTP OK (not a browser or Codex test)\n' "$listeners"
     ;;
   unit)
@@ -159,6 +171,7 @@ Environment=SOMA_CONTAINER=0
 Environment=SOMA_USER_DATA=$SOMA_USER_DATA
 Environment=SOMA_PYTHON=$SOMA_PYTHON
 Environment=SOMA_WEB_PORT=$port
+$([[ -z $lan_host ]] || printf 'Environment=SOMA_WEB_LAN_HOST=%s' "$lan_host")
 Environment=SHELL=/bin/bash
 Environment=LOCAL_GIT_DIRECTORY=/usr
 Environment=GIT_EXEC_PATH=$GIT_EXEC_PATH
