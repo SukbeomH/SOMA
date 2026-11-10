@@ -24,6 +24,8 @@ install --fem adds constrained gmsh/pyamg. It does not run an FEM study.
 SOMA_CT_PORT defaults to 8765; install stores it for run/unit/status.
 SOMA_CT_LAN_HOST=<CT IPv4> at install also serves that address to the LAN, without login:
 anyone who can reach it gets the terminal and Codex account. Install with SOMA_CT_LAN_HOST= to remove.
+SOMA_CT_TAILSCALE_HOST=<name>.<tailnet>.ts.net at install accepts that name, served by root with
+`tailscale serve --bg --https=443 http://127.0.0.1:<port>` (tailnet only, same no-login trust).
 Ubuntu 24.04 x86_64 unprivileged LXC only. No Docker/display/security changes.
 HELP
 }
@@ -78,6 +80,9 @@ export SOMA_WEB_PORT=$port
 lan_host=${SOMA_CT_LAN_HOST-}
 if [[ -f $STATE/lan_host && ( $command != install || -z ${SOMA_CT_LAN_HOST+x} ) ]]; then lan_host=$(cat "$STATE/lan_host"); fi
 [[ -z $lan_host || $lan_host =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || fail 'Invalid SOMA_CT_LAN_HOST (IPv4 address of this CT)'
+ts_host=${SOMA_CT_TAILSCALE_HOST-}
+if [[ -f $STATE/ts_host && ( $command != install || -z ${SOMA_CT_TAILSCALE_HOST+x} ) ]]; then ts_host=$(cat "$STATE/ts_host"); fi
+[[ -z $ts_host || $ts_host =~ ^[a-z0-9-]+(\.[a-z0-9-]+)+\.ts\.net$ ]] || fail 'Invalid SOMA_CT_TAILSCALE_HOST (MagicDNS name ending in .ts.net)'
 
 free_port() { [[ -z $(ss -H -ltn "sport = :$1") ]] || fail "Port $1 is already listening; stop the owning service before continuing"; }
 checks() {
@@ -101,6 +106,7 @@ case "$command" in
     rm -f "$STATE/ready"
     printf '%s\n' "$port" > "$STATE/port"
     if [[ -n $lan_host ]]; then printf '%s\n' "$lan_host" > "$STATE/lan_host"; else rm -f "$STATE/lan_host"; fi
+    if [[ -n $ts_host ]]; then printf '%s\n' "$ts_host" > "$STATE/ts_host"; else rm -f "$STATE/ts_host"; fi
     if [[ ! -d $NODE_HOME ]]; then
       mkdir -p "$(dirname "$NODE_HOME")"
       staging=$(mktemp -d "$(dirname "$NODE_HOME")/.download.XXXXXX")
@@ -130,12 +136,13 @@ case "$command" in
     # Record package versions only; never dump environment, credentials or sessions.
     "$SOMA_PYTHON" -m pip freeze > "$STATE/python-installed.txt"
     npm --prefix "$ROOT/app" ls --depth=0 --json > "$STATE/npm-installed.json"
-    { git -C "$ROOT" rev-parse HEAD; node --version; "$SOMA_PYTHON" --version; codex --version; printf 'port=%s\nlan_host=%s\nfem_requested=%s\n' "$port" "$lan_host" "$fem"; } > "$STATE/versions.txt"
+    { git -C "$ROOT" rev-parse HEAD; node --version; "$SOMA_PYTHON" --version; codex --version; printf 'port=%s\nlan_host=%s\nts_host=%s\nfem_requested=%s\n' "$port" "$lan_host" "$ts_host" "$fem"; } > "$STATE/versions.txt"
     date -u '+%Y-%m-%dT%H:%M:%SZ' > "$STATE/ready"
     printf 'Installed. Run: bash scripts/ct.sh login\nThen: bash scripts/ct.sh run\nURL: http://127.0.0.1:%s/\n' "$port"
     [[ -z $lan_host ]] || printf 'LAN URL (no login): http://%s:%s/\n' "$lan_host" "$port"
+    [[ -z $ts_host ]] || printf 'Tailscale URL (no login, needs tailscale serve): https://%s/\n' "$ts_host"
     ;;
-  run) ready; free_port "$port"; SOMA_WEB_LAN_HOST=$lan_host exec node "$ROOT/app/scripts/start-web.mjs";;
+  run) ready; free_port "$port"; SOMA_WEB_LAN_HOST=$lan_host SOMA_WEB_TAILSCALE_HOST=$ts_host exec node "$ROOT/app/scripts/start-web.mjs";;
   stop) ready; exec node "$ROOT/app/scripts/stop-web.mjs";;
   check) ready; checks;;
   login) ready; exec codex login --device-auth;;
@@ -149,6 +156,10 @@ case "$command" in
     if [[ -n $lan_host ]]; then
       curl --fail --silent --show-error --max-time 5 "http://$lan_host:$port/" -o /dev/null
       printf 'LAN access enabled without login: http://%s:%s/\n' "$lan_host" "$port"
+    fi
+    if [[ -n $ts_host ]]; then
+      curl --fail --silent --show-error --max-time 5 -H "Host: $ts_host" "http://127.0.0.1:$port/" -o /dev/null
+      printf 'Tailscale name accepted without login: https://%s/ (tailscale serve not checked)\n' "$ts_host"
     fi
     printf '%s\nHTTP OK (not a browser or Codex test)\n' "$listeners"
     ;;
@@ -172,6 +183,7 @@ Environment=SOMA_USER_DATA=$SOMA_USER_DATA
 Environment=SOMA_PYTHON=$SOMA_PYTHON
 Environment=SOMA_WEB_PORT=$port
 $([[ -z $lan_host ]] || printf 'Environment=SOMA_WEB_LAN_HOST=%s' "$lan_host")
+$([[ -z $ts_host ]] || printf 'Environment=SOMA_WEB_TAILSCALE_HOST=%s' "$ts_host")
 Environment=SHELL=/bin/bash
 Environment=LOCAL_GIT_DIRECTORY=/usr
 Environment=GIT_EXEC_PATH=$GIT_EXEC_PATH

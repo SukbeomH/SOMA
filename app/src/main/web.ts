@@ -29,7 +29,14 @@ export async function startWeb(dispatch: Dispatch, root: string, files?: WebFile
   // the terminal and the agent's account. Host/Origin must still name this address exactly.
   const lanHost = process.env.SOMA_WEB_LAN_HOST || '';
   if (lanHost && !/^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/.test(lanHost)) throw new Error('Invalid SOMA_WEB_LAN_HOST');
-  const origins = new Set([origin, ...(lanHost ? [`http://${lanHost}:${port}`] : [])]);
+  // Opt-in Tailscale MagicDNS name, reached through `tailscale serve` (HTTPS on 443 proxied to the
+  // loopback port). Same trust model as the LAN address, limited to the tailnet.
+  const tsHost = process.env.SOMA_WEB_TAILSCALE_HOST || '';
+  if (tsHost && !/^[a-z0-9-]+(\.[a-z0-9-]+)+\.ts\.net$/.test(tsHost)) throw new Error('Invalid SOMA_WEB_TAILSCALE_HOST');
+  // Host header -> the only Origin accepted with it.
+  const origins = new Map([[`127.0.0.1:${port}`, origin]]);
+  if (lanHost) origins.set(`${lanHost}:${port}`, `http://${lanHost}:${port}`);
+  if (tsHost) origins.set(tsHost, `https://${tsHost}`);
   const secret = crypto.randomBytes(32).toString('hex');
   const send = (res: http.ServerResponse, status: number, value: unknown) => {
     res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
@@ -37,8 +44,8 @@ export async function startWeb(dispatch: Dispatch, root: string, files?: WebFile
   };
   server = http.createServer(async (req, res) => {
     try {
-      const self = `http://${req.headers.host}`;
-      if (!origins.has(self) || (req.headers.origin && req.headers.origin !== self)
+      const self = origins.get(req.headers.host || '');
+      if (!self || (req.headers.origin && req.headers.origin !== self)
         || req.headers['sec-fetch-site'] === 'cross-site') { send(res, 403, { error: 'Local same-origin access only' }); return; }
       const url = new URL(req.url || '/', self);
       if (req.method === 'GET' && url.pathname === '/') {
