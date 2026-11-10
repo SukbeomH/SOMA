@@ -91,7 +91,7 @@ export async function startWeb(dispatch: Dispatch, root: string, files?: WebFile
       const file = path.resolve(root, rel);
       if (!file.startsWith(root + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()
         || !fs.realpathSync(file).startsWith(fs.realpathSync(root) + path.sep)) { send(res, 404, { error: 'Not found' }); return; }
-      const mime: Record<string,string> = { '.html': 'text/html', '.js':'text/javascript', '.css':'text/css', '.svg':'image/svg+xml', '.woff2':'font/woff2', '.wasm':'application/wasm' };
+      const mime: Record<string,string> = { '.html': 'text/html', '.js':'text/javascript', '.css':'text/css', '.svg':'image/svg+xml', '.png':'image/png', '.woff2':'font/woff2', '.wasm':'application/wasm' };
       let bytes = fs.readFileSync(file);
       if (rel === 'index.html') bytes = Buffer.from(bytes.toString().replace('<script src="main.js"', '<script src="web-preload.js"></script><script src="main.js"'));
       res.writeHead(200, { 'Content-Type': mime[path.extname(file)] || 'application/octet-stream', 'Cache-Control':'no-store', 'X-Content-Type-Options':'nosniff', 'X-Frame-Options':'DENY' }); res.end(bytes);
