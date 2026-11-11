@@ -1,3 +1,4 @@
+import { writeClipboardText } from '../renderer/clipboard';
 type Listener = (event: undefined, ...args: unknown[]) => void;
 const listeners = new Map<string, Listener[]>();
 // randomUUID exists only in secure contexts; the opt-in LAN address is plain HTTP.
@@ -82,7 +83,7 @@ function showLocation(title: string, value: string): void {
 }
 ipcRenderer.on('web:location', (_e, value) => showLocation('Location on the SOMA server', String(value)));
 ipcRenderer.on('web:clipboard', (_e, value) => {
-  if (typeof value === 'string') void navigator.clipboard.writeText(value).catch(() => showLocation('Copy this text', value));
+  if (typeof value === 'string') void writeClipboardText(value).catch(() => showLocation('Copy this text', value));
 });
 ipcRenderer.on('web:openUrl', (_e, value) => {
   if (typeof value !== 'string' || !/^(https?:\/\/|mailto:)/i.test(value)) return;

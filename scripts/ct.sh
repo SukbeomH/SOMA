@@ -79,7 +79,8 @@ if [[ -f $STATE/port && ( $command != install || -z ${SOMA_CT_PORT:-} ) ]]; then
 export SOMA_WEB_PORT=$port
 lan_host=${SOMA_CT_LAN_HOST-}
 if [[ -f $STATE/lan_host && ( $command != install || -z ${SOMA_CT_LAN_HOST+x} ) ]]; then lan_host=$(cat "$STATE/lan_host"); fi
-[[ -z $lan_host || $lan_host =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || fail 'Invalid SOMA_CT_LAN_HOST (IPv4 address of this CT)'
+ipv4_octet='(0|[1-9][0-9]?|1[0-9]{2}|2[0-4][0-9]|25[0-5])'
+[[ -z $lan_host || $lan_host =~ ^$ipv4_octet(\.$ipv4_octet){3}$ ]] || fail 'Invalid SOMA_CT_LAN_HOST (IPv4 address of this CT)'
 ts_host=${SOMA_CT_TAILSCALE_HOST-}
 if [[ -f $STATE/ts_host && ( $command != install || -z ${SOMA_CT_TAILSCALE_HOST+x} ) ]]; then ts_host=$(cat "$STATE/ts_host"); fi
 [[ -z $ts_host || $ts_host =~ ^[a-z0-9-]+(\.[a-z0-9-]+)+\.ts\.net$ ]] || fail 'Invalid SOMA_CT_TAILSCALE_HOST (MagicDNS name ending in .ts.net)'

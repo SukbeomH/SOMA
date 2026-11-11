@@ -90,6 +90,9 @@ export function terminalImages(pane: HTMLElement, terminal: Terminal, id: number
     key: (event: KeyboardEvent): boolean => {
       if (busy && event.key === 'Enter') { event.preventDefault(); return false; }
       if (event.ctrlKey && !event.metaKey && !event.altKey && event.key.toLowerCase() === 'v') {
+        // Let the browser dispatch its native paste event on plain HTTP.
+        // Returning false stops xterm from sending ^V, without cancelling browser Paste.
+        if (!navigator.clipboard?.readText) return false;
         event.preventDefault(); if (event.type === 'keydown') void readClipboard(true); return false;
       }
       return true;

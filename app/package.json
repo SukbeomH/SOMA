@@ -41,7 +41,7 @@
     "test": "npm run build && node test/run-all.mjs",
     "test:all": "npm run build && node test/run-all.mjs --all",
     "start:web": "npm run build:web && node scripts/start-web.mjs",
-    "test:web": "node test/web.mjs",
+    "test:web": "node test/web.mjs && node test/web-clipboard.mjs",
     "stop:web": "node scripts/stop-web.mjs",
     "build:web": "node esbuild.config.mjs --web",
     "test:headless": "npm run build:web && node test/headless.mjs"

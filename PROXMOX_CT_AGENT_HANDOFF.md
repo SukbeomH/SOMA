@@ -60,6 +60,21 @@ fi
 
 systemd 방식은 `stop:web`/스크립트 `stop` 대신 `systemctl stop`으로 종료한다. `enable`은 자동 실행하지 않는다. 포트를 바꿔 재설치한 경우 unit도 다시 생성해 차이를 검토하고 반영해야 한다.
 
+원격 머지 이후 스크립트에는 선택적 직접 접속 옵션도 있다. 기본값은 여전히 루프백이며 아래 옵션은 해당 접근을 승인한 경우에만 지정한다:
+
+```sh
+# CT LAN 주소 직접 접속 (별도 로그인 없음)
+SOMA_CT_LAN_HOST=192.168.1.20 bash scripts/ct.sh install --fem
+# Tailscale HTTPS 프록시의 정확한 이름 허용 (tailscale serve 설정 자체는 자동 수행하지 않음)
+SOMA_CT_TAILSCALE_HOST=soma.example.ts.net bash scripts/ct.sh install --fem
+# 저장된 직접 접속 설정 해제
+SOMA_CT_LAN_HOST= SOMA_CT_TAILSCALE_HOST= bash scripts/ct.sh install --fem
+```
+
+옵션은 재설치 시 유지되므로 LAN에서 Tailscale 전용으로 전환할 때는 `SOMA_CT_LAN_HOST=`도 명시한다. LAN 옵션은 `0.0.0.0` 리스닝과 지정 Host/Origin 허용을 활성화한다. 접근 가능한 사용자는 터미널과 Codex 계정을 사용할 수 있으며 Host/Origin 검사는 로그인 인증이 아니다. Tailscale 이름만 지정하면 기본 루프백 바인딩을 유지한다. `status`는 프록시까지 검증하지 않으므로 실제 HTTPS URL 접속도 별도로 확인한다. systemd 설정은 옵션 변경 후 재생성·검토·반영한다.
+
+일반 LAN HTTP에서는 브라우저 Clipboard API가 없을 수 있다. Ctrl+V/브라우저 Paste는 기본 붙여넣기 이벤트를 이용하지만 ＋Image 버튼의 클립보드 읽기는 HTTPS/localhost가 필요하다. 복사 실패 시 안내 또는 수동 복사 표시를 사용한다.
+
 Mac 접속은 아래 6절 SSH 로컬 포워딩을 따른다. 설치 후에도 7절의 실제 Codex·브라우저·FEM 시험을 완료해야 한다.
 
 개발용 스크립트 검사는 Linux 일반 사용자로 `python3 scripts/test-ct.py`를 실행한다. OS/외부 명령을 대역으로 치환한 테스트이며 CT 실설치 검증이 아니다.

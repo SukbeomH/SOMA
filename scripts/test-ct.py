@@ -48,7 +48,8 @@ codex() { echo codex-cli-0.167.0; }
 curl() { [[ ${TEST_HTTP:-0} == 1 ]] || { echo 'Network not allowed in tests' >&2; return 99; }; }
 ''')
     env = {**os.environ, 'HOME': str(home), 'BASH_ENV': str(mocks)}
-    env.pop('SOMA_CT_PORT', None)
+    for key in ['SOMA_CT_PORT', 'SOMA_CT_LAN_HOST', 'SOMA_CT_TAILSCALE_HOST', 'SOMA_WEB_LAN_HOST', 'SOMA_WEB_TAILSCALE_HOST']:
+        env.pop(key, None)
     def run(command, ok=True, contains='', **extra):
         result = subprocess.run(['bash', str(script), *command.split()], env={**env, **extra}, text=True, capture_output=True)
         assert (result.returncode == 0) == ok, (command, result.stdout, result.stderr)
@@ -61,6 +62,9 @@ curl() { [[ ${TEST_HTTP:-0} == 1 ]] || { echo 'Network not allowed in tests' >&2
     run('install', False, 'Root UID is not remapped', TEST_PRIVILEGED='1')
     run('install --bad', False, 'Only install')
     run('install', False, 'Invalid SOMA_CT_PORT', SOMA_CT_PORT='80')
+    for invalid in ['999.1.2.3', '192.168.01.2', 'lan.example']:
+        run('install', False, 'Invalid SOMA_CT_LAN_HOST', SOMA_CT_LAN_HOST=invalid)
+        assert not (state / 'ready').exists()
     run('run', False, 'No successful install')
     run('install', False, 'already listening', TEST_LISTENER='LISTEN 0 10 127.0.0.1:8765 0.0.0.0:*')
     (state / 'ready').touch()
@@ -80,8 +84,18 @@ curl() { [[ ${TEST_HTTP:-0} == 1 ]] || { echo 'Network not allowed in tests' >&2
     assert 'Environment=SOMA_WEB_PORT=8876' in unit
     assert 'Restart=no' in unit and 'User=root' not in unit
     run('status', False, 'No listening')
-    run('status', False, 'Non-loopback', TEST_LISTENER='LISTEN 0 10 0.0.0.0:8876 0.0.0.0:*')
+    run('status', False, 'Unexpected listener', TEST_LISTENER='LISTEN 0 10 0.0.0.0:8876 0.0.0.0:*')
     run('status', True, 'HTTP OK', TEST_HTTP='1', TEST_LISTENER='LISTEN 0 10 127.0.0.1:8876 0.0.0.0:*')
+    run('install', True, 'Installed.', SOMA_CT_LAN_HOST='192.168.1.20', SOMA_CT_TAILSCALE_HOST='soma.tail0.ts.net')
+    run('install', True, 'Installed.')
+    unit = run('unit')
+    assert 'Environment=SOMA_WEB_LAN_HOST=192.168.1.20' in unit
+    assert 'Environment=SOMA_WEB_TAILSCALE_HOST=soma.tail0.ts.net' in unit
+    run('status', True, 'LAN access enabled', TEST_HTTP='1', TEST_LISTENER='LISTEN 0 10 0.0.0.0:8876 0.0.0.0:*')
+    run('install', True, 'Installed.', SOMA_CT_LAN_HOST='', SOMA_CT_TAILSCALE_HOST='')
+    assert not (state / 'lan_host').exists() and not (state / 'ts_host').exists()
+    assert 'Environment=SOMA_WEB_LAN_HOST=' not in run('unit')
+    run('status', False, 'Unexpected listener', TEST_LISTENER='LISTEN 0 10 0.0.0.0:8876 0.0.0.0:*')
     (state / 'install.lock').mkdir()
     run('install', False, 'Install lock exists')
 print('PASS: CT guards, install failure/readiness, saved port, build/test calls, unit and listener checks (mock tools only)')

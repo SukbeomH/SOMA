@@ -81,8 +81,10 @@ try {
   stopWeb(); process.env.SOMA_WEB_TAILSCALE_HOST = 'evil.example';
   await assert.rejects(startWeb(async () => ({ ok: true }), temp), /Invalid SOMA_WEB_TAILSCALE_HOST/);
   delete process.env.SOMA_WEB_TAILSCALE_HOST;
-  process.env.SOMA_WEB_LAN_HOST = 'lan.example';
   stopWeb();
-  await assert.rejects(startWeb(async () => ({ ok: true }), temp), /Invalid SOMA_WEB_LAN_HOST/);
+  for (const invalid of ['lan.example', '999.1.2.3', '192.168.01.2']) {
+    process.env.SOMA_WEB_LAN_HOST = invalid;
+    await assert.rejects(startWeb(async () => ({ ok: true }), temp), /Invalid SOMA_WEB_LAN_HOST/);
+  }
   console.log('PASS: opt-in LAN host and Tailscale name accept only their own Host/Origin; invalid values rejected');
 } finally { stopWeb(); delete process.env.SOMA_WEB_LAN_HOST; delete process.env.SOMA_WEB_TAILSCALE_HOST; await fs.rm(temp, { recursive: true, force: true }); }

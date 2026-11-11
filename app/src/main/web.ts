@@ -1,4 +1,5 @@
 import http from 'node:http';
+import { isIPv4 } from 'node:net';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -28,7 +29,7 @@ export async function startWeb(dispatch: Dispatch, root: string, files?: WebFile
   // Opt-in LAN address (an IPv4 literal). There is no login: every client that can reach it gets
   // the terminal and the agent's account. Host/Origin must still name this address exactly.
   const lanHost = process.env.SOMA_WEB_LAN_HOST || '';
-  if (lanHost && !/^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/.test(lanHost)) throw new Error('Invalid SOMA_WEB_LAN_HOST');
+  if (lanHost && !isIPv4(lanHost)) throw new Error('Invalid SOMA_WEB_LAN_HOST');
   // Opt-in Tailscale MagicDNS name, reached through `tailscale serve` (HTTPS on 443 proxied to the
   // loopback port). Same trust model as the LAN address, limited to the tailnet.
   const tsHost = process.env.SOMA_WEB_TAILSCALE_HOST || '';

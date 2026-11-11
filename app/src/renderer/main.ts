@@ -1,3 +1,4 @@
+import { writeClipboardText } from './clipboard';
 import { installBrowserRendering } from '../web/render-browser';
 import { affectsBuild } from '../shared/editable';
 import { DEFAULT_SETTINGS, type SettingsPatch, type SettingsResult, type SettingsState } from '../shared/settings';
@@ -352,7 +353,7 @@ const files = new FileTree($('tab-files'), $('menu-ctx'), {
   openExternal: (rel) => void openExternal(rel),
   mark: (rel) => void markImage(rel),
   toAgent: (rel) => insertToAgent(`[File: ${rel}] `),
-  copyPath: (rel) => void navigator.clipboard.writeText(rel).then(() => toast(`Path copied: ${rel}`), (e) => toast(`The path could not be copied: ${e instanceof Error ? e.message : String(e)}`, 'error')),
+  copyPath: (rel) => void writeClipboardText(rel).then(() => toast(`Path copied: ${rel}`), (e) => toast(`The path could not be copied: ${e instanceof Error ? e.message : String(e)}`, 'error')),
   showInTree: (rel, rename) => void showInTree(rel, rename),
 });
 fileTree = files;
@@ -845,7 +846,7 @@ const analysisPanel = new AnalysisPanel({
   agent: $<HTMLButtonElement>('btn-result-agent'), menu: $('menu-ctx'),
 }, {
   tool: resultTool, insert: (t) => insertToAgent(t), openCode: (f) => void openCode(f),
-  copy: (t) => void navigator.clipboard.writeText(t).then(() => toast(`Copied: ${t}`), (e) => toast(`Could not copy: ${e instanceof Error ? e.message : String(e)}`, 'error')),
+  copy: (t) => void writeClipboardText(t).then(() => toast(`Copied: ${t}`), (e) => toast(`Could not copy: ${e instanceof Error ? e.message : String(e)}`, 'error')),
   isNew: (r) => !seen.has(resultKey(r)), seen: (r) => { seen.add(resultKey(r)); },
 });
 const animPanel = new AnimPanel({
